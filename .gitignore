@@ -39,11 +39,6 @@ logs/
 ehthumbs.db
 Thumbs.db
 
-# Spring Boot文件
-application-dev.yml
-application-prod.yml
-application-local.yml
-
 # 数据库文件
 *.db
 *.sqlite
@@ -54,11 +49,6 @@ application-local.yml
 *.temp
 *.bak
 *.backup
-
-# 环境配置文件（包含敏感信息）
-.env
-.env.local
-.env.*.local
 
 # Node.js相关（如果前端项目）
 node_modules/

@@ -1,0 +1,99 @@
+# ==========================================
+# 电商微服务项目主配置文件
+# E-commerce Microservices Main Configuration
+#
+# 使用extends语法引用基础设施和应用配置
+# ==========================================
+
+include:
+  - ./docker-compose.infra.yml
+  - ./docker-compose.apps.yml
+
+# ==========================================
+# 使用说明
+# ==========================================
+#
+# 1. 启动所有服务（基础设施 + 应用）:
+#    docker-compose up -d
+#
+# 2. 仅启动基础设施:
+#    docker-compose -f docker-compose.infra.yml up -d
+#
+# 3. 仅启动应用服务（基础设施必须已启动）:
+#    docker-compose -f docker-compose.apps.yml up -d
+#
+# 4. 分阶段启动:
+#    # 第一步：启动基础设施
+#    docker-compose -f docker-compose.infra.yml up -d
+#    # 第二步：等待基础设施健康后启动应用
+#    docker-compose -f docker-compose.apps.yml up -d
+#
+# 5. 停止所有服务:
+#    docker-compose down
+#
+# 6. 查看服务状态:
+#    docker-compose ps
+#
+# 7. 查看服务日志:
+#    docker-compose logs -f [service-name]
+#
+# ==========================================
+# 服务依赖关系
+# ==========================================
+#
+# 基础设施服务:
+#   mysql (数据库)
+#   redis (缓存)
+#   nacos (服务注册发现) -> 依赖 mysql
+#   rocketmq-nameserver (消息队列)
+#   rocketmq-broker (消息队列) -> 依赖 rocketmq-nameserver
+#   rocketmq-console (消息队列控制台) -> 依赖 rocketmq-nameserver
+#   seata-server (分布式事务) -> 依赖 mysql
+#
+# 应用服务:
+#   api-gateway -> 依赖 nacos, redis
+#   user-service -> 依赖 nacos, mysql, redis
+#   product-service -> 依赖 nacos, mysql, redis
+#   trade-service -> 依赖 nacos, mysql, redis, rocketmq-nameserver
+#
+# ==========================================
+# 网络配置
+# ==========================================
+#
+# 所有服务都在同一个网络中: ecommerce-infrastructure-network
+# 网络子网: 172.20.0.0/16
+#
+# ==========================================
+# 数据持久化
+# ==========================================
+#
+# MySQL数据: ecommerce-mysql-data
+# Redis数据: ecommerce-redis-data
+# RocketMQ日志: ecommerce-rocketmq-*-logs
+# RocketMQ存储: ecommerce-rocketmq-broker-store
+#
+# ==========================================
+# 健康检查
+# ==========================================
+#
+# 所有服务都配置了健康检查:
+# - 检查间隔: 30秒
+# - 超时时间: 10秒
+# - 重试次数: 3次
+# - 启动等待时间: 60秒
+#
+# ==========================================
+# 环境变量
+# ==========================================
+#
+# 所有配置都通过 .env 文件管理:
+# - 时区: TIMEZONE=Asia/Shanghai
+# - 端口配置: *_PORT
+# - 数据库配置: MYSQL_*
+# - Redis配置: REDIS_*
+# - Nacos配置: NACOS_*
+# - RocketMQ配置: ROCKETMQ_*
+# - JVM配置: *_JAVA_OPTS
+# - 健康检查配置: HEALTHCHECK_*
+#
+# ==========================================

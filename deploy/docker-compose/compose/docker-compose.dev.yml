@@ -1,0 +1,71 @@
+# ==========================================
+# 开发环境配置覆盖
+# Development Environment Override Configuration
+# ==========================================
+
+# 开发环境特定配置
+services:
+  # 开发环境下的调试配置
+  api-gateway:
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - LOGGING_LEVEL_COM_ECOMMERCE=DEBUG
+    volumes:
+      # 开发环境挂载源代码，支持热重载
+      - ../../backend/api-gateway/src:/app/src
+      - ../../backend/api-gateway/target:/app/target
+    ports:
+      # 开发环境暴露调试端口
+      - "${GATEWAY_DEBUG_PORT:-5005}:5005"
+
+  user-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - LOGGING_LEVEL_COM_ECOMMERCE=DEBUG
+    volumes:
+      - ../../backend/user-service/src:/app/src
+      - ../../backend/user-service/target:/app/target
+    ports:
+      - "${USER_SERVICE_DEBUG_PORT:-5006}:5006"
+
+  product-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - LOGGING_LEVEL_COM_ECOMMERCE=DEBUG
+    volumes:
+      - ../../backend/product-service/src:/app/src
+      - ../../backend/product-service/target:/app/target
+    ports:
+      - "${PRODUCT_SERVICE_DEBUG_PORT:-5007}:5007"
+
+  trade-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - LOGGING_LEVEL_COM_ECOMMERCE=DEBUG
+    volumes:
+      - ../../backend/trade-service/src:/app/src
+      - ../../backend/trade-service/target:/app/target
+    ports:
+      - "${TRADE_SERVICE_DEBUG_PORT:-5008}:5008"
+
+  # MySQL开发环境配置
+  mysql:
+    environment:
+      - MYSQL_INNODB_BUFFER_POOL_SIZE=256M
+      - MYSQL_INNODB_LOG_FILE_SIZE=64M
+    ports:
+      # 开发环境暴露MySQL端口到主机
+      - "${MYSQL_DEBUG_PORT:-3307}:3306"
+
+  # Redis开发环境配置
+  redis:
+    volumes:
+      # 开发环境使用持久化配置
+      - ./config/redis/redis-dev.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes
+
+# 开发环境网络配置
+networks:
+  ecommerce-network:
+    driver: bridge
+    name: ecommerce-dev-network

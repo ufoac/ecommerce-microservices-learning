@@ -276,11 +276,23 @@ deploy/kubernetes/
 ## 快速开始
 
 ### 开发环境要求
+- **Git 2.30.x**
 - **JDK 21+**
 - **Maven 3.6.3+**
 - **Node.js 18+**（前端开发）
 - **Docker & Docker Compose**
-- **Windows 用户需启用 WSL2**
+- **Windows 用户需启用 WSL2** `wsl --install`
+
+安装完通过以下命令检查
+```commandline
+git --version
+java -version
+mvn -version
+node -v
+npm -v
+docker --version
+docker-compose --version
+```
 
 ### 开发环境启动
 
@@ -355,7 +367,6 @@ kubectl apply -k deploy/kubernetes/overlays/production
 - **refactor**: 重构
 - **test**: 测试相关
 - **chore**: 构建过程或辅助工具变动
-- 注意：提交信息简洁，不要含有AI信息
 
 ### 分支管理策略
 - **main**：生产环境分支
