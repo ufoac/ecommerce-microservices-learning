@@ -1,0 +1,70 @@
+server:
+  port: 8080  # 网关端口，对外统一入口
+
+spring:
+  application:
+    name: api-gateway  # 服务名称，用于服务注册发现
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848  # Nacos注册中心地址
+        namespace: public  # 命名空间
+        group: DEFAULT_GROUP  # 分组
+      config:
+        server-addr: localhost:8848  # Nacos配置中心地址
+        file-extension: yml  # 配置文件格式
+        namespace: public
+        group: DEFAULT_GROUP
+
+    gateway:
+      # 网关路由配置 - 基础配置，后续会逐步完善
+      routes:
+        # 用户服务路由
+        - id: user-service
+          uri: lb://user-service  # 负载均衡到用户服务
+          predicates:
+            - Path=/user/**  # 路径匹配规则
+          filters:
+            - StripPrefix=1  # 去除前缀，实际转发到/user-service的接口
+
+        # 商品服务路由
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/product/**
+          filters:
+            - StripPrefix=1
+
+        # 交易服务路由
+        - id: trade-service
+          uri: lb://trade-service
+          predicates:
+            - Path=/trade/**
+          filters:
+            - StripPrefix=1
+
+  # 跨域配置
+  cors:
+    allowed-origins: "*"
+    allowed-methods: "*"
+    allowed-headers: "*"
+    allow-credentials: true
+
+# 日志配置
+logging:
+  level:
+    com.cao.ecommerce: DEBUG  # 开发环境打印DEBUG日志
+    org.springframework.cloud.gateway: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway  # 开启健康检查、信息和网关端点
+  endpoint:
+    health:
+      show-details: always

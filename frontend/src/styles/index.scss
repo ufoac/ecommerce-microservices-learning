@@ -1,0 +1,121 @@
+// 全局样式入口文件
+
+@import './variables.scss';
+
+// 重置样式
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  font-size: $font-size-base;
+  color: $text-primary;
+  background-color: $background-color-base;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// 链接样式
+a {
+  color: $primary-color;
+  text-decoration: none;
+
+  &:hover {
+    color: lighten($primary-color, 10%);
+  }
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: $background-color-base;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $border-color-light;
+  border-radius: 3px;
+
+  &:hover {
+    background: $border-color-base;
+  }
+}
+
+// 通用工具类
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.flex { display: flex; }
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hidden { display: none; }
+.visible { visibility: visible; }
+.invisible { visibility: hidden; }
+
+// 间距工具类
+@each $prop in (margin, padding) {
+  @each $size, $value in (xs: $spacing-xs, sm: $spacing-sm, md: $spacing-md, lg: $spacing-lg, xl: $spacing-xl) {
+    .#{$prop}-#{$size} { #{$prop}: $value; }
+    .#{$prop}-t-#{$size} { #{$prop}-top: $value; }
+    .#{$prop}-r-#{$size} { #{$prop}-right: $value; }
+    .#{$prop}-b-#{$size} { #{$prop}-bottom: $value; }
+    .#{$prop}-l-#{$size} { #{$prop}-left: $value; }
+    .#{$prop}-x-#{$size} {
+      #{$prop}-left: $value;
+      #{$prop}-right: $value;
+    }
+    .#{$prop}-y-#{$size} {
+      #{$prop}-top: $value;
+      #{$prop}-bottom: $value;
+    }
+  }
+}
+
+// Element Plus 样式定制
+.el-button {
+  border-radius: $border-radius-base;
+}
+
+.el-card {
+  border-radius: $border-radius-base;
+  box-shadow: $box-shadow-light;
+}
+
+.el-input__inner {
+  border-radius: $border-radius-base;
+}
+
+// 响应式工具类
+@media (max-width: $breakpoint-sm) {
+  .hidden-xs { display: none !important; }
+}
+
+@media (max-width: $breakpoint-md) {
+  .hidden-sm { display: none !important; }
+}
+
+@media (max-width: $breakpoint-lg) {
+  .hidden-md { display: none !important; }
+}
+
+@media (max-width: $breakpoint-xl) {
+  .hidden-lg { display: none !important; }
+}
