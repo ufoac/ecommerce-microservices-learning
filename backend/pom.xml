@@ -45,8 +45,8 @@
 
         <!-- 其他中间件 -->
         <redisson.version>3.25.2</redisson.version>
-        <seata.version>1.7.1</seata.version>
-        <rocketmq.version>2.2.3</rocketmq.version>
+        <seata.version>2.3.0</seata.version>
+        <rocketmq.version>5.1.4</rocketmq.version>
     </properties>
 
     <!-- 依赖版本管理 -->

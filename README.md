@@ -13,13 +13,12 @@
 - **Spring Cloud 2023.x**
 - **Spring Cloud Alibaba 2023.x**
 - **MyBatis-Plus 3.x**
-
+- 
 ### 微服务基础设施
 - **Nacos 2.x**（服务注册与发现、配置中心）
 - **Spring Cloud Gateway**（API 网关）
-- **RocketMQ 2.x**（消息队列）
+- **RocketMQ 5.x**（消息队列）
 - **OpenFeign**（服务间通信）
-- **Seata 1.x**（分布式事务）
 
 ### 数据持久化
 - **MySQL 8.x**
@@ -63,7 +62,6 @@ ecommerce-microservices-learning/
 ├── infrastructure/                    # 基础设施配置
 │   ├── database/                     # 数据库初始化脚本
 │   ├── nginx/                        # 负载均衡配置
-│   ├── seata/                        # 分布式事务配置
 │   └── monitoring/                   # 监控与可观测性配置
 ├── docs/                             # 项目文档
 │   ├── 需求.md                       # 业务需求文档
@@ -190,7 +188,6 @@ backend/trade-service/
 │   │   ├── mq/                        # 消息队列集成
 │   │   │   ├── producer/              # 消息生产者
 │   │   │   └── consumer/              # 消息消费者
-│   │   ├── seata/                     # 分布式事务配置
 │   │   ├── client/                    # 外部服务客户端（如 Feign）
 │   │   ├── config/                    # Spring 配置类
 │   │   └── util/                      # 服务内工具类
@@ -255,10 +252,7 @@ deploy/kubernetes/
 │   │   ├── statefulset.yaml
 │   │   ├── service.yaml
 │   │   └── pvc.yaml
-│   └── seata/                 # Seata 部署
-│       ├── deployment.yaml
-│       └── service.yaml
-└── overlays/                   # 环境覆盖配置
+│   └── overlays/                   # 环境覆盖配置
     ├── development/
     │   ├── kustomization.yaml
     │   └── patch-memory.yaml
@@ -304,7 +298,7 @@ docker compose up -d
 ```bash
 # 启动基础设施
 cd deploy/docker-compose
-docker compose -f compose/docker-compose.infra.yml up -d
+docker compose -f docker-compose.infra.yml up -d
 
 # 启动后端服务（在各自目录下）
 cd backend/api-gateway && mvn spring-boot:run
@@ -324,14 +318,14 @@ npm run dev
 curl http://localhost:8080/actuator/health
 
 # 检查业务服务健康状态（待实现网关路由配置）
-curl http://localhost:8080/api/user/actuator/health
-curl http://localhost:8080/api/product/actuator/health
-curl http://localhost:8080/api/trade/actuator/health
+curl http://localhost:28080/api/user/actuator/health
+curl http://localhost:28080/api/product/actuator/health
+curl http://localhost:28080/api/trade/actuator/health
 
 # 直接访问各服务（当前阶段）
-curl http://localhost:8081/actuator/health  # user-service
-curl http://localhost:8082/actuator/health  # product-service
-curl http://localhost:8083/actuator/health  # trade-service
+curl http://localhost:28081/actuator/health  # user-service
+curl http://localhost:28082/actuator/health  # product-service
+curl http://localhost:28083/actuator/health  # trade-service
 ```
 
 ### 生产环境部署
@@ -346,14 +340,14 @@ kubectl apply -k deploy/kubernetes/overlays/production
 ## 访问地址
 
 - **前端应用**: http://localhost
-- **API 网关**: http://localhost:8080
-- **用户服务 API**: http://localhost:8080/api/user/**
-- **商品服务 API**: http://localhost:8080/api/product/**
-- **交易服务 API**: http://localhost:8080/api/trade/**
-- **API 文档**: http://localhost:8080/api/user/swagger-ui.html
+- **API 网关**: http://localhost:28080
+- **用户服务 API**: http://localhost:28080/api/user/**
+- **商品服务 API**: http://localhost:28080/api/product/**
+- **交易服务 API**: http://localhost:28080/api/trade/**
+- **API 文档**: http://localhost:28080/api/user/swagger-ui.html
 - **监控面板 (Grafana)**: http://localhost:3000
-- **RocketMQ 控制台**: http://localhost:8080
-- **Seata 控制台**: http://localhost:7091
+- **RocketMQ 控制台**: http://localhost:18080
+- **Nacos 控制台**: http://localhost:18848/nacos
 
 ## 开发规范
 
@@ -397,7 +391,10 @@ kubectl apply -k deploy/kubernetes/overlays/production
 - **DDD 领域驱动**: 清晰的业务边界、聚合根、领域事件
 - **统一网关**: Spring Cloud Gateway 统一入口，集中治理
 - **消息驱动**: RocketMQ 异步解耦，确保最终一致性
-- **分布式事务**: Seata AT/TCC 模式保障数据一致性
 - **云原生架构**: Docker 容器化 + Kubernetes 编排
 - **高可观测性**: Micrometer + Prometheus + Grafana 全链路监控
 - **弹性通信**: Nacos 服务发现 + OpenFeign + 熔断降级
+- **注**: 分布式事务将在后期单独引入
+
+---
+阿里巴巴微服务：https://sca.aliyun.com/docs/2023/overview/version-explain/?spm=5176.29160081.0.0.74805c72C8HBC0

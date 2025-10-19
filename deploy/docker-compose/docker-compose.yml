@@ -48,7 +48,6 @@ include:
 #   rocketmq-nameserver (消息队列)
 #   rocketmq-broker (消息队列) -> 依赖 rocketmq-nameserver
 #   rocketmq-console (消息队列控制台) -> 依赖 rocketmq-nameserver
-#   seata-server (分布式事务) -> 依赖 mysql
 #
 # 应用服务:
 #   api-gateway -> 依赖 nacos, redis

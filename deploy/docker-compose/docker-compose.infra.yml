@@ -6,8 +6,8 @@
 services:
   # MySQL数据库
   mysql:
-    image: ${MYSQL_IMAGE:-mysql}:${MYSQL_VERSION:-8.0}
-    container_name: ecommerce-mysql
+    image: ${MYSQL_IMAGE:-mysql}:${MYSQL_VERSION:-latest}
+    container_name: mysql
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123456}
@@ -19,7 +19,7 @@ services:
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     networks:
-      - ecommerce-network
+      - ecommerce-infrastructure-network
     volumes:
       - mysql-data:/var/lib/mysql
       - ./config/mysql/init:/docker-entrypoint-initdb.d
@@ -42,22 +42,28 @@ services:
 
   # Redis缓存
   redis:
-    image: ${REDIS_IMAGE:-redis}:${REDIS_VERSION:-7.0-alpine}
-    container_name: ecommerce-redis
+    image: ${REDIS_IMAGE:-redis}:${REDIS_VERSION:-latest}
+    container_name: redis
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123456}
     ports:
       - "${REDIS_PORT:-6379}:6379"
     networks:
-      - ecommerce-network
+      - ecommerce-infrastructure-network
     volumes:
       - redis-data:/data
       - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
       - /etc/localtime:/etc/localtime:ro
-    command: redis-server /usr/local/etc/redis/redis.conf
+    command: >
+      redis-server /usr/local/etc/redis/redis.conf
+      --requirepass ${REDIS_PASSWORD:-redis123456}
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis123456}", "ping"]
       interval: ${HEALTHCHECK_INTERVAL:-30}s
       timeout: ${HEALTHCHECK_TIMEOUT:-10}s
       retries: ${HEALTHCHECK_RETRIES:-3}
@@ -68,13 +74,15 @@ services:
 
   # Nacos服务注册发现和配置中心
   nacos:
-    image: nacos/nacos-server:${NACOS_VERSION:-v2.5.1}
-    container_name: ecommerce-nacos
+    image: ${NACOS_IMAGE:-nacos}:${NACOS_VERSION:-v2.5.1}
+    container_name: nacos
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
       - MODE=${NACOS_MODE:-standalone}
       - NACOS_AUTH_ENABLE=${NACOS_AUTH_ENABLE:-true}
-      - NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789
+      - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN}
+      - NACOS_AUTH_IDENTITY_KEY=${NACOS_AUTH_IDENTITY_KEY}
+      - NACOS_AUTH_IDENTITY_VALUE=${NACOS_AUTH_IDENTITY_VALUE}
       - SPRING_DATASOURCE_PLATFORM=mysql
       - MYSQL_SERVICE_HOST=mysql
       - MYSQL_SERVICE_PORT=${MYSQL_PORT:-3306}
@@ -83,17 +91,14 @@ services:
       - MYSQL_SERVICE_PASSWORD=${NACOS_DB_PASSWORD:-root123456}
       - MYSQL_CHARACTER_SET_SERVER=${MYSQL_CHARSET:-utf8mb4}
       - MYSQL_COLLATION_SERVER=${MYSQL_COLLATION:-utf8mb4_unicode_ci}
-      - NACOS_SERVER_PORT=${NACOS_SERVER_PORT:-8848}
-      - NACOS_APPLICATION_PORT=${NACOS_SERVER_PORT:-8848}
-      - NACOS_SERVER_RPC_PORT=${NACOS_SERVER_RPC_PORT:-9848}
     ports:
-      - "${NACOS_SERVER_PORT:-8848}:${NACOS_SERVER_PORT:-8848}"
-      - "${NACOS_SERVER_RPC_PORT:-9848}:${NACOS_SERVER_RPC_PORT:-9848}"
+      - "${NACOS_SERVER_PORT:-8848}:8848"
+      - "${NACOS_SERVER_RPC_PORT:-9848}:9848"
     depends_on:
       mysql:
         condition: service_healthy
     networks:
-      - ecommerce-network
+      - ecommerce-infrastructure-network
     volumes:
       - ./logs/nacos:/home/nacos/logs
       - /etc/localtime:/etc/localtime:ro
@@ -111,16 +116,15 @@ services:
   # RocketMQ NameServer
   rocketmq-nameserver:
     image: ${ROCKETMQ_IMAGE:-apache/rocketmq}:${ROCKETMQ_VERSION:-5.3.2}
-    container_name: ecommerce-rocketmq-nameserver
+    container_name: rocketmq-nameserver
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
-      - JAVA_OPT_EXT=-server -Xms256m -Xmx256m -Duser.timezone=${TIMEZONE:-Asia/Shanghai}
+      - JAVA_OPT_EXT=-server -Xms256m -Xmx256m
     ports:
-      - "${ROCKETMQ_NAMESRV_PORT:-9876}:${ROCKETMQ_NAMESRV_PORT:-9876}"
+      - "${ROCKETMQ_NAMESRV_PORT:-9876}:9876"
     networks:
-      - ecommerce-network
+      - ecommerce-infrastructure-network
     volumes:
-      - rocketmq-nameserver-logs:/home/rocketmq/logs
       - /etc/localtime:/etc/localtime:ro
     command: ["sh","-c","./mqnamesrv"]
     restart: unless-stopped
@@ -137,24 +141,22 @@ services:
   # RocketMQ Broker
   rocketmq-broker:
     image: ${ROCKETMQ_IMAGE:-apache/rocketmq}:${ROCKETMQ_VERSION:-5.3.2}
-    container_name: ecommerce-rocketmq-broker
+    container_name: rocketmq-broker
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
-      - JAVA_OPT_EXT=-server -Xms256m -Xmx256m -Duser.timezone=${TIMEZONE:-Asia/Shanghai}
-      - NAMESRV_ADDR=rocketmq-nameserver:${ROCKETMQ_NAMESRV_PORT:-9876}
+      - JAVA_OPT_EXT=-server -Xms256m -Xmx256m
+      - NAMESRV_ADDR=rocketmq-nameserver:9876
     ports:
-      - "${ROCKETMQ_BROKER_PORT1:-10909}:${ROCKETMQ_BROKER_PORT1:-10909}"
-      - "${ROCKETMQ_BROKER_PORT2:-10911}:${ROCKETMQ_BROKER_PORT2:-10911}"
+      - "${ROCKETMQ_BROKER_PORT1:-10909}:10909"
+      - "${ROCKETMQ_BROKER_PORT2:-10911}:10911"
     depends_on:
       rocketmq-nameserver:
         condition: service_started
     networks:
-      - ecommerce-network
+      - ecommerce-infrastructure-network
     volumes:
-      - rocketmq-broker-logs:/home/rocketmq/logs
-      - rocketmq-broker-store:/home/rocketmq/store
       - /etc/localtime:/etc/localtime:ro
-    command: ["sh","-c","./mqbroker -c /home/rocketmq/rocketmq-5.3.2/conf/broker.conf"]
+    command: ["sh","-c","./mqbroker -n rocketmq-nameserver:9876"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "sh", "-c", "tail -f /dev/null"]
@@ -169,20 +171,20 @@ services:
   # RocketMQ Console
   rocketmq-console:
     image: ${ROCKETMQ_CONSOLE_IMAGE:-styletang/rocketmq-console-ng}:${ROCKETMQ_CONSOLE_VERSION:-latest}
-    container_name: ecommerce-rocketmq-console
+    container_name: rocketmq-console
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
-      - JAVA_OPTS=-Drocketmq.namesrv.addr=rocketmq-nameserver:${ROCKETMQ_NAMESRV_PORT:-9876} -Dcom.rocketmq.sendMessageWithVIPChannel=false
+      - JAVA_OPTS=-Drocketmq.namesrv.addr=rocketmq-nameserver:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
     ports:
-      - "${ROCKETMQ_CONSOLE_PORT:-8081}:8080"
+      - "${ROCKETMQ_CONSOLE_PORT:-18080}:8080"
     depends_on:
       rocketmq-nameserver:
         condition: service_started
     networks:
-      - ecommerce-network
+      - ecommerce-infrastructure-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      test: ["CMD", "curl", "-f", "http://localhost:18080"]
       interval: ${HEALTHCHECK_INTERVAL:-30}s
       timeout: ${HEALTHCHECK_TIMEOUT:-10}s
       retries: ${HEALTHCHECK_RETRIES:-3}
@@ -191,39 +193,9 @@ services:
       - "com.ecommerce.service.type=infrastructure"
       - "com.ecommerce.service.category=message-queue"
 
-  # Seata分布式事务协调器
-  seata-server:
-    image: ${SEATA_IMAGE:-seataio/seata-server}:${SEATA_VERSION:-2.0.0}
-    container_name: ecommerce-seata
-    environment:
-      - TZ=${TIMEZONE:-Asia/Shanghai}
-      - SEATA_PORT=${SEATA_SERVER_PORT:-7091}
-      - STORE_MODE=${SEATA_STORE_MODE:-db}
-      - SEATA_CONFIG_NAME=file:/root/seata-config/registry
-    ports:
-      - "${SEATA_SERVER_PORT:-7091}:${SEATA_SERVER_PORT:-7091}"
-      - "${SEATA_SERVER_RPC_PORT:-8091}:${SEATA_SERVER_RPC_PORT:-8091}"
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - ecommerce-network
-    volumes:
-      - ./config/seata:/root/seata-config
-      - /etc/localtime:/etc/localtime:ro
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${SEATA_SERVER_PORT:-7091}/"]
-      interval: ${HEALTHCHECK_INTERVAL:-30}s
-      timeout: ${HEALTHCHECK_TIMEOUT:-10}s
-      retries: ${HEALTHCHECK_RETRIES:-3}
-      start_period: ${HEALTHCHECK_START_PERIOD:-60}s
-    labels:
-      - "com.ecommerce.service.type=infrastructure"
-      - "com.ecommerce.service.category=transaction"
-
+  
 networks:
-  ecommerce-network:
+  ecommerce-infrastructure-network:
     driver: bridge
     name: ecommerce-infrastructure-network
     ipam:
@@ -237,12 +209,12 @@ volumes:
   redis-data:
     driver: local
     name: ecommerce-redis-data
-  rocketmq-nameserver-logs:
-    driver: local
-    name: ecommerce-rocketmq-nameserver-logs
-  rocketmq-broker-logs:
-    driver: local
-    name: ecommerce-rocketmq-broker-logs
-  rocketmq-broker-store:
-    driver: local
-    name: ecommerce-rocketmq-broker-store
+#  rocketmq-nameserver-logs:
+#    driver: local
+#    name: ecommerce-rocketmq-nameserver-logs
+#  rocketmq-broker-logs:
+#    driver: local
+#    name: ecommerce-rocketmq-broker-logs
+#  rocketmq-broker-store:
+#    driver: local
+#    name: ecommerce-rocketmq-broker-store

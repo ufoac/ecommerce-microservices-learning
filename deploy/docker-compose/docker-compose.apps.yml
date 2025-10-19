@@ -10,7 +10,7 @@ services:
       context: ../../backend/api-gateway
       dockerfile: Dockerfile
     image: ecommerce/api-gateway:latest
-    container_name: ecommerce-api-gateway
+    container_name: api-gateway
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
       - JAVA_OPTS=${GATEWAY_JAVA_OPTS:--Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseContainerSupport -Duser.timezone=${TIMEZONE:-Asia/Shanghai}}
@@ -18,19 +18,19 @@ services:
       - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
       - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
     ports:
-      - "${GATEWAY_PORT:-8080}:8080"
+      - "${GATEWAY_PORT:-28080}:28080"
     depends_on:
       nacos:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - ecommerce-network
+      - ecommerce-infrastructure-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:28080/actuator/health"]
       interval: ${HEALTHCHECK_INTERVAL:-30}s
       timeout: ${HEALTHCHECK_TIMEOUT:-10}s
       retries: ${HEALTHCHECK_RETRIES:-3}
@@ -46,7 +46,7 @@ services:
       context: ../../backend/user-service
       dockerfile: Dockerfile
     image: ecommerce/user-service:latest
-    container_name: ecommerce-user-service
+    container_name: user-service
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
       - JAVA_OPTS=${USER_SERVICE_JAVA_OPTS:--Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseContainerSupport -Duser.timezone=${TIMEZONE:-Asia/Shanghai}}
@@ -62,7 +62,7 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123456}
     ports:
-      - "${USER_SERVICE_PORT:-8081}:8081"
+      - "${USER_SERVICE_PORT:-28081}:28081"
     depends_on:
       nacos:
         condition: service_healthy
@@ -71,12 +71,12 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - ecommerce-network
+      - ecommerce-infrastructure-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:28081/actuator/health"]
       interval: ${HEALTHCHECK_INTERVAL:-30}s
       timeout: ${HEALTHCHECK_TIMEOUT:-10}s
       retries: ${HEALTHCHECK_RETRIES:-3}
@@ -93,7 +93,7 @@ services:
       context: ../../backend/product-service
       dockerfile: Dockerfile
     image: ecommerce/product-service:latest
-    container_name: ecommerce-product-service
+    container_name: product-service
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
       - JAVA_OPTS=${PRODUCT_SERVICE_JAVA_OPTS:--Xms512m -Xmx1536m -XX:+UseG1GC -XX:+UseContainerSupport -Duser.timezone=${TIMEZONE:-Asia/Shanghai}}
@@ -109,7 +109,7 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123456}
     ports:
-      - "${PRODUCT_SERVICE_PORT:-8082}:8082"
+      - "${PRODUCT_SERVICE_PORT:-28082}:28082"
     depends_on:
       nacos:
         condition: service_healthy
@@ -118,12 +118,12 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - ecommerce-network
+      - ecommerce-infrastructure-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:28082/actuator/health"]
       interval: ${HEALTHCHECK_INTERVAL:-30}s
       timeout: ${HEALTHCHECK_TIMEOUT:-10}s
       retries: ${HEALTHCHECK_RETRIES:-3}
@@ -140,7 +140,7 @@ services:
       context: ../../backend/trade-service
       dockerfile: Dockerfile
     image: ecommerce/trade-service:latest
-    container_name: ecommerce-trade-service
+    container_name: trade-service
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
       - JAVA_OPTS=${TRADE_SERVICE_JAVA_OPTS:--Xms512m -Xmx1536m -XX:+UseG1GC -XX:+UseContainerSupport -Duser.timezone=${TIMEZONE:-Asia/Shanghai}}
@@ -157,7 +157,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123456}
       - ROCKETMQ_NAMESERVER_ADDR=rocketmq-nameserver:${ROCKETMQ_NAMESRV_PORT:-9876}
     ports:
-      - "${TRADE_SERVICE_PORT:-8083}:8083"
+      - "${TRADE_SERVICE_PORT:-28083}:28083"
     depends_on:
       nacos:
         condition: service_healthy
@@ -168,12 +168,12 @@ services:
       rocketmq-nameserver:
         condition: service_started
     networks:
-      - ecommerce-network
+      - ecommerce-infrastructure-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:28083/actuator/health"]
       interval: ${HEALTHCHECK_INTERVAL:-30}s
       timeout: ${HEALTHCHECK_TIMEOUT:-10}s
       retries: ${HEALTHCHECK_RETRIES:-3}
@@ -185,6 +185,6 @@ services:
       - "com.ecommerce.service.tier=backend"
 
 networks:
-  ecommerce-network:
+  ecommerce-infrastructure-network:
     external: true
     name: ecommerce-infrastructure-network

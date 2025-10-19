@@ -1,48 +1,50 @@
 server:
-  port: 8080  # 网关端口，对外统一入口
+  port: 28080  # 网关端口（避免Windows端口限制）
 
 spring:
   application:
     name: api-gateway  # 服务名称，用于服务注册发现
-
-  cloud:
-    nacos:
-      discovery:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}  # Nacos注册中心地址，支持环境变量
-        namespace: public  # 命名空间
-        group: DEFAULT_GROUP  # 分组
-        username: ${NACOS_USERNAME:nacos}  # Nacos用户名
-        password: ${NACOS_PASSWORD:nacos}  # Nacos密码
-      config:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}  # Nacos配置中心地址
-        file-extension: yml  # 配置文件格式
-        namespace: public
-        group: DEFAULT_GROUP
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
+  main:
+    web-application-type: reactive
+  # Nacos配置将在第一阶段统一添加
+  # cloud:
+  #   nacos:
+  #     discovery:
+  #       server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+  #       namespace: public
+  #       group: DEFAULT_GROUP
+  #       username: ${NACOS_USERNAME:nacos}
+  #       password: ${NACOS_PASSWORD:nacos}
+  #     config:
+  #       server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+  #       file-extension: yml
+  #       namespace: public
+  #       group: DEFAULT_GROUP
+  #       username: ${NACOS_USERNAME:nacos}
+  #       password: ${NACOS_PASSWORD:nacos}
 
     gateway:
-      # 网关路由配置 - 基础配置，后续会逐步完善
+      # 网关路由配置 - 第零阶段：直连路由，不依赖服务发现
       routes:
-        # 用户服务路由
+        # 用户服务路由 - 直连模式
         - id: user-service
-          uri: lb://user-service  # 负载均衡到用户服务
+          uri: http://localhost:28081  # 直连用户服务
           predicates:
             - Path=/user/**  # 路径匹配规则
           filters:
             - StripPrefix=1  # 去除前缀，实际转发到/user-service的接口
 
-        # 商品服务路由
+        # 商品服务路由 - 直连模式
         - id: product-service
-          uri: lb://product-service
+          uri: http://localhost:28082  # 直连商品服务
           predicates:
             - Path=/product/**
           filters:
             - StripPrefix=1
 
-        # 交易服务路由
+        # 交易服务路由 - 直连模式
         - id: trade-service
-          uri: lb://trade-service
+          uri: http://localhost:28083  # 直连交易服务
           predicates:
             - Path=/trade/**
           filters:

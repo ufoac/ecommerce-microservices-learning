@@ -1,59 +1,40 @@
 server:
-  port: 8082  # 商品服务端口
+  port: 28082  # 商品服务端口（避免Windows端口限制）
 
 spring:
   application:
     name: product-service  # 服务名称
 
-  cloud:
-    nacos:
-      discovery:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}  # Nacos注册中心地址
-        namespace: public
-        group: DEFAULT_GROUP
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
-      config:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}  # Nacos配置中心地址
-        file-extension: yml
-        namespace: public
-        group: DEFAULT_GROUP
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
+  # Nacos配置将在第一阶段统一添加
+  # cloud:
+  #   nacos:
+  #     discovery:
+  #       server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+  #       namespace: public
+  #       group: DEFAULT_GROUP
+  #       username: ${NACOS_USERNAME:nacos}
+  #       password: ${NACOS_PASSWORD:nacos}
+  #     config:
+  #       server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+  #       file-extension: yml
+  #       namespace: public
+  #       group: DEFAULT_GROUP
+  #       username: ${NACOS_USERNAME:nacos}
+  #       password: ${NACOS_PASSWORD:nacos}
 
-  # 数据库配置
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ecommerce}?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&useSSL=false
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root123456}
-    type: com.alibaba.druid.pool.DruidDataSource
-    druid:
-      initial-size: 5
-      min-idle: 5
-      max-active: 20
-      max-wait: 60000
-      time-between-eviction-runs-millis: 60000
-      min-evictable-idle-time-millis: 300000
-      validation-query: SELECT 1
-      test-while-idle: true
-      test-on-borrow: false
-      test-on-return: false
+  # 数据库和Redis配置将在第三阶段统一启用
+  # datasource:
+  #   driver-class-name: com.mysql.cj.jdbc.Driver
+  #   url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ecommerce}
+  #   username: ${DB_USERNAME:root}
+  #   password: ${DB_PASSWORD:root123456}
 
-  # Redis配置 - 商品服务大量使用缓存
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      database: 1  # 使用不同的数据库避免冲突
-      timeout: 3000ms
-      lettuce:
-        pool:
-          max-active: 16  # 商品服务并发量高，增大连接池
-          max-idle: 16
-          min-idle: 0
-          max-wait: -1ms
+  # data:
+  #   redis:
+  #     host: ${REDIS_HOST:localhost}
+  #     port: ${REDIS_PORT:6379}
+  #     password: ${REDIS_PASSWORD:}
+  #     database: 1
 
 # MyBatis-Plus配置
 mybatis-plus:
