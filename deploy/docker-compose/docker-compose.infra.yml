@@ -19,7 +19,7 @@ services:
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     networks:
-      - ecommerce-infrastructure-network
+      - ecommerce-network
     volumes:
       - mysql-data:/var/lib/mysql
       - ./config/mysql/init:/docker-entrypoint-initdb.d
@@ -50,7 +50,7 @@ services:
     ports:
       - "${REDIS_PORT:-6379}:6379"
     networks:
-      - ecommerce-infrastructure-network
+      - ecommerce-network
     volumes:
       - redis-data:/data
       - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
@@ -98,7 +98,7 @@ services:
       mysql:
         condition: service_healthy
     networks:
-      - ecommerce-infrastructure-network
+      - ecommerce-network
     volumes:
       - ./logs/nacos:/home/nacos/logs
       - /etc/localtime:/etc/localtime:ro
@@ -123,7 +123,7 @@ services:
     ports:
       - "${ROCKETMQ_NAMESRV_PORT:-9876}:9876"
     networks:
-      - ecommerce-infrastructure-network
+      - ecommerce-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
     command: ["sh","-c","./mqnamesrv"]
@@ -153,7 +153,7 @@ services:
       rocketmq-nameserver:
         condition: service_started
     networks:
-      - ecommerce-infrastructure-network
+      - ecommerce-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
     command: ["sh","-c","./mqbroker -n rocketmq-nameserver:9876"]
@@ -181,7 +181,7 @@ services:
       rocketmq-nameserver:
         condition: service_started
     networks:
-      - ecommerce-infrastructure-network
+      - ecommerce-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:18080"]
@@ -195,12 +195,9 @@ services:
 
   
 networks:
-  ecommerce-infrastructure-network:
-    driver: bridge
-    name: ecommerce-infrastructure-network
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+  ecommerce-network:
+    external: true
+    name: ecommerce-network
 
 volumes:
   mysql-data:

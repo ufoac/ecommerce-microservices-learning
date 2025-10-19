@@ -19,13 +19,8 @@ services:
       - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
     ports:
       - "${GATEWAY_PORT:-28080}:28080"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
-      - ecommerce-infrastructure-network
+      - ecommerce-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
@@ -63,15 +58,8 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123456}
     ports:
       - "${USER_SERVICE_PORT:-28081}:28081"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
-      - ecommerce-infrastructure-network
+      - ecommerce-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
@@ -110,15 +98,8 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123456}
     ports:
       - "${PRODUCT_SERVICE_PORT:-28082}:28082"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
-      - ecommerce-infrastructure-network
+      - ecommerce-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
@@ -158,17 +139,8 @@ services:
       - ROCKETMQ_NAMESERVER_ADDR=rocketmq-nameserver:${ROCKETMQ_NAMESRV_PORT:-9876}
     ports:
       - "${TRADE_SERVICE_PORT:-28083}:28083"
-    depends_on:
-      nacos:
-        condition: service_healthy
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rocketmq-nameserver:
-        condition: service_started
     networks:
-      - ecommerce-infrastructure-network
+      - ecommerce-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
@@ -185,6 +157,6 @@ services:
       - "com.ecommerce.service.tier=backend"
 
 networks:
-  ecommerce-infrastructure-network:
+  ecommerce-network:
     external: true
-    name: ecommerce-infrastructure-network
+    name: ecommerce-network
