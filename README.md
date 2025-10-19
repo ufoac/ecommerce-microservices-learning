@@ -2,25 +2,28 @@
 
 ## 项目概述
 
-本项目是一个基于 JDK 21 和 Spring Boot 3.3 的电商交易领域微服务学习项目，采用国内中大型互联网公司主流技术栈与 DDD（领域驱动设计）架构，包含前端应用和四个核心后端微服务，严格遵循业界最佳实践。
+本项目是一个基于 JDK 21 和 Spring Boot 3.3.5 的电商交易领域微服务学习项目，采用国内中大型互联网公司主流技术栈与 DDD（领域驱动设计）架构，包含前端应用和四个核心后端微服务，严格遵循业界最佳实践。
+
 
 ## 技术栈
 
 ### 后端核心框架
 - **JDK 21**
 - **Spring Boot 3.3.5**
-- **MyBatis-Plus 3.5.14**
+- **Spring Cloud 2023.0.3**
+- **MyBatis-Plus 3.5.5**
 
 ### 微服务基础设施
 - **Nacos 2.5.1**（服务注册与发现、配置中心）
-- **Spring Cloud Gateway 4.3.1**（API 网关）
-- **RocketMQ 5.3.2**（消息队列）
+- **Spring Cloud Gateway**（API 网关）
+- **RocketMQ 2.2.3**（消息队列）
 - **OpenFeign**（服务间通信）
-- **Seata 2.0.0**（分布式事务）
+- **Seata 1.7.1**（分布式事务）
 
 ### 数据持久化
-- **MySQL 8.0.40**
+- **MySQL 8.0.33**
 - **Redis 7.0**
+- **Redisson 3.25.2**（分布式锁）
 
 ### 可观测性
 - **Micrometer**（应用指标采集）
@@ -35,34 +38,38 @@
 ## 项目结构
 
 ```
-ecommerce-demo/
+ecommerce-microservices-learning/
 ├── frontend/                          # Vue.js 前端单页应用
 │   ├── src/                          # 前端源码目录
 │   ├── public/                       # 静态资源文件
 │   ├── package.json                  # 项目依赖配置
-│   ├── Dockerfile                    # 前端容器镜像构建
-│   └── nginx.conf                    # Nginx 反向代理配置
+│   ├── vite.config.js               # Vite 构建配置
+│   └── Dockerfile                    # 前端容器镜像构建
 ├── backend/                           # Spring Boot 微服务集群
+│   ├── pom.xml                       # Maven 父项目管理
 │   ├── common/                       # 通用工具和基础组件
 │   ├── api-gateway/                  # API 网关服务
 │   ├── user-service/                 # 用户管理微服务
 │   ├── product-service/              # 商品管理微服务
-│   ├── trade-service/                # 交易核心微服务
-│   └── pom.xml                       # Maven 父项目管理
+│   └── trade-service/                # 交易核心微服务
 ├── deploy/                            # 多环境部署配置
 │   ├── docker-compose/               # 开发环境容器编排
-│   ├── kubernetes/                   # 生产环境 K8s 配置
-│   └── scripts/                      # 自动化部署脚本
+│   │   └── compose/                  # Docker Compose 配置文件
+│   │       ├── docker-compose.yml    # 主配置文件（使用 include）
+│   │       ├── docker-compose.infra.yml # 基础设施配置
+│   │       └── docker-compose.apps.yml  # 应用服务配置
+│   └── kubernetes/                   # 生产环境 K8s 配置（规划中）
 ├── infrastructure/                    # 基础设施配置
 │   ├── database/                     # 数据库初始化脚本
 │   ├── nginx/                        # 负载均衡配置
 │   ├── seata/                        # 分布式事务配置
 │   └── monitoring/                   # 监控与可观测性配置
 ├── docs/                             # 项目文档
-│   ├── api/                         # API 接口文档
-│   ├── database/                    # 数据库设计文档
-│   ├── transaction/                 # 分布式事务设计
-│   └── deployment/                  # 部署运维文档
+│   ├── 需求.md                       # 业务需求文档
+│   ├── 开发计划.md                   # 详细实施计划
+│   ├── api/                         # API 接口文档（规划中）
+│   ├── database/                    # 数据库设计文档（规划中）
+│   └── deployment/                  # 部署运维文档（规划中）
 ├── README.md                         # 项目整体说明文档
 ├── CLAUDE.md                         # AI 助手项目记忆文件
 └── .gitignore                        # Git 忽略配置
@@ -102,24 +109,23 @@ ecommerce-demo/
 
 ```
 backend/api-gateway/
-├── src/main/java/com/ecommerce/gateway/
+├── src/main/java/com/cao/ecommerce/gateway/
 │   ├── GatewayApplication.java        # 启动类
 │   ├── config/                        # 网关配置
-│   │   ├── GatewayConfig.java         # 路由配置
-│   │   ├── CorsConfig.java            # 跨域配置
-│   │   ├── RateLimitConfig.java       # 限流配置
-│   │   └── FilterConfig.java          # 过滤器配置
-│   ├── filter/                        # 网关过滤器
+│   │   ├── GatewayConfig.java         # 路由配置（待实现）
+│   │   ├── CorsConfig.java            # 跨域配置（待实现）
+│   │   ├── RateLimitConfig.java       # 限流配置（待实现）
+│   │   └── FilterConfig.java          # 过滤器配置（待实现）
+│   ├── filter/                        # 网关过滤器（待实现）
 │   │   ├── AuthFilter.java            # 认证过滤器
 │   │   ├── RateLimitFilter.java       # 限流过滤器
 │   │   ├── LoggingFilter.java         # 日志过滤器
 │   │   └── GlobalExceptionFilter.java # 全局异常处理
-│   └── fallback/                      # 降级处理
+│   └── fallback/                      # 降级处理（待实现）
 │       ├── UserServiceFallback.java   # 用户服务降级
 │       └── ProductServiceFallback.java# 商品服务降级
 ├── src/main/resources/
 │   ├── application.yml                # 主配置文件
-│   ├── routes/                        # 路由规则文件
 │   └── logback-spring.xml             # 日志配置
 ├── Dockerfile                         # 容器镜像构建文件
 └── pom.xml
@@ -130,55 +136,55 @@ backend/api-gateway/
 ```
 backend/common/
 ├── pom.xml
-└── src/main/java/com/ecommerce/common/
-    ├── annotation/
-    │   ├── Idempotent.java
-    │   └── DistributedLock.java       # 分布式锁注解
-    ├── constant/
-    │   ├── CommonConstants.java
-    │   ├── TimeUnitConstants.java
-    │   └── TransactionConstants.java  # 事务常量
-    ├── exception/
-    │   ├── BaseException.java
-    │   ├── BizException.java
-    │   ├── ErrorCode.java
-    │   └── SystemException.java
-    ├── model/
-    │   ├── PageQuery.java
-    │   ├── PageResult.java
-    │   └── Result.java
-    ├── mq/                            # 消息队列相关
-    │   ├── MessageWrapper.java
-    │   ├── MqConstant.java
-    │   └── RocketMqTemplate.java
-    └── util/
-        ├── Asserts.java
-        ├── DateUtils.java
-        ├── IdGenerator.java
-        ├── JsonUtils.java
-        └── MaskUtils.java
+└── src/main/java/com/cao/ecommerce/common/
+    ├── annotation/                    # 注解定义（待实现）
+    │   ├── Idempotent.java           # 幂等性注解
+    │   └── DistributedLock.java      # 分布式锁注解
+    ├── constant/                      # 常量定义（待实现）
+    │   ├── CommonConstants.java      # 通用常量
+    │   ├── TimeUnitConstants.java   # 时间单位常量
+    │   └── TransactionConstants.java # 事务常量
+    ├── exception/                     # 异常处理（待实现）
+    │   ├── BaseException.java        # 基础异常
+    │   ├── BizException.java         # 业务异常
+    │   ├── ErrorCode.java            # 错误码定义
+    │   └── SystemException.java      # 系统异常
+    ├── model/                         # 通用模型（待实现）
+    │   ├── PageQuery.java            # 分页查询
+    │   ├── PageResult.java           # 分页结果
+    │   └── Result.java               # 统一响应格式
+    ├── mq/                            # 消息队列相关（待实现）
+    │   ├── MessageWrapper.java       # 消息包装器
+    │   ├── MqConstant.java           # 消息队列常量
+    │   └── RocketMqTemplate.java     # RocketMQ 模板
+    └── util/                          # 工具类（待实现）
+        ├── Asserts.java              # 断言工具
+        ├── DateUtils.java            # 日期工具
+        ├── IdGenerator.java          # ID 生成器
+        ├── JsonUtils.java            # JSON 工具
+        └── MaskUtils.java            # 脱敏工具
 ```
 
 ### 微服务结构（以 trade-service 为例）
 
 ```
 backend/trade-service/
-├── src/main/java/com/ecommerce/trade/
+├── src/main/java/com/cao/ecommerce/trade/
 │   ├── TradeApplication.java          # 启动类
-│   ├── interfaces/                    # 接口层
+│   ├── interfaces/                    # 接口层（待实现）
 │   │   ├── rest/                      # REST API 控制器
 │   │   └── rpc/                       # Feign/RPC 接口
-│   ├── application/                   # 应用层
+│   ├── application/                   # 应用层（待实现）
 │   │   ├── service/                   # 应用服务（用例编排）
 │   │   ├── event/handler/             # 事件处理器
 │   │   └── scheduler/                 # 定时任务
-│   ├── domain/                        # 领域层（核心）
+│   ├── domain/                        # 领域层（待实现）
 │   │   ├── model/                     # 领域模型（实体、值对象）
 │   │   ├── service/                   # 领域服务
 │   │   ├── event/                     # 领域事件
 │   │   ├── repository/                # 仓库接口
 │   │   └── factory/                   # 领域工厂
-│   ├── infrastructure/                # 基础设施层
+│   ├── infrastructure/                # 基础设施层（待实现）
 │   │   ├── persistence/               # 持久化实现（MyBatis）
 │   │   ├── mq/                        # 消息队列集成
 │   │   │   ├── producer/              # 消息生产者
@@ -187,14 +193,10 @@ backend/trade-service/
 │   │   ├── client/                    # 外部服务客户端（如 Feign）
 │   │   ├── config/                    # Spring 配置类
 │   │   └── util/                      # 服务内工具类
-│   └── shared/                        # 服务内共享组件（DTO、枚举等）
+│   └── shared/                        # 服务内共享组件（待实现）
 ├── src/main/resources/
 │   ├── application.yml                # 主配置文件
-│   ├── application-dev.yml            # 开发环境配置
-│   ├── observability/                 # 可观测性配置
-│   ├── mappers/                       # MyBatis XML 映射文件
-│   ├── rocketmq/                      # RocketMQ 配置
-│   └── seata.conf                     # Seata 配置
+│   └── logback-spring.xml             # 日志配置
 ├── Dockerfile                         # 容器镜像构建文件
 └── pom.xml
 ```
@@ -205,17 +207,12 @@ backend/trade-service/
 
 ```
 deploy/docker-compose/
-├── docker-compose.yml
-├── .env
-├── config/
-│   ├── nacos/              # Nacos 配置
-│   ├── gateway/            # 网关配置
-│   ├── seata/              # Seata 配置
-│   ├── rocketmq/           # RocketMQ 配置
-│   ├── nginx/              # Nginx 配置
-│   ├── mysql/              # 数据库初始化脚本
-│   └── prometheus/         # Prometheus 配置
-└── logs/                   # 各中间件日志目录
+├── compose/                            # Docker Compose 配置文件
+│   ├── docker-compose.yml             # 主配置文件（使用 include 语法）
+│   ├── docker-compose.infra.yml       # 基础设施配置（MySQL、Redis、Nacos等）
+│   └── docker-compose.apps.yml        # 应用服务配置（微服务）
+├── .env                                # 环境变量配置
+└── logs/                               # 各中间件日志目录
 ```
 
 ### Kubernetes 生产环境
@@ -299,14 +296,14 @@ docker-compose --version
 **方式一：一键启动所有服务（推荐）**
 ```bash
 cd deploy/docker-compose
-docker-compose up -d
+docker compose up -d
 ```
 
 **方式二：分别启动服务**
 ```bash
 # 启动基础设施
 cd deploy/docker-compose
-docker-compose up -d mysql redis rocketmq nacos seata
+docker compose -f compose/docker-compose.infra.yml up -d
 
 # 启动后端服务（在各自目录下）
 cd backend/api-gateway && mvn spring-boot:run
@@ -317,7 +314,7 @@ cd backend/trade-service && mvn spring-boot:run
 # 启动前端开发服务器
 cd frontend
 npm install
-npm run serve
+npm run dev
 ```
 
 ### 验证服务状态
@@ -325,10 +322,15 @@ npm run serve
 # 检查网关健康状态
 curl http://localhost:8080/actuator/health
 
-# 检查业务服务健康状态  
+# 检查业务服务健康状态（待实现网关路由配置）
 curl http://localhost:8080/api/user/actuator/health
 curl http://localhost:8080/api/product/actuator/health
 curl http://localhost:8080/api/trade/actuator/health
+
+# 直接访问各服务（当前阶段）
+curl http://localhost:8081/actuator/health  # user-service
+curl http://localhost:8082/actuator/health  # product-service
+curl http://localhost:8083/actuator/health  # trade-service
 ```
 
 ### 生产环境部署
