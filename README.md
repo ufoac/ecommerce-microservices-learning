@@ -2,28 +2,29 @@
 
 ## 项目概述
 
-本项目是一个基于 JDK 21 和 Spring Boot 3.3.5 的电商交易领域微服务学习项目，采用国内中大型互联网公司主流技术栈与 DDD（领域驱动设计）架构，包含前端应用和四个核心后端微服务，严格遵循业界最佳实践。
+本项目是一个基于 JDK 21 和 Spring Boot 3.2.x 的电商交易领域微服务学习项目，采用国内中大型互联网公司主流技术栈与 DDD（领域驱动设计）架构，包含前端应用和四个核心后端微服务，严格遵循业界最佳实践。
 
 
 ## 技术栈
 
 ### 后端核心框架
 - **JDK 21**
-- **Spring Boot 3.3.5**
-- **Spring Cloud 2023.0.3**
-- **MyBatis-Plus 3.5.5**
+- **Spring Boot 3.2.x**
+- **Spring Cloud 2023.x**
+- **Spring Cloud Alibaba 2023.x**
+- **MyBatis-Plus 3.x**
 
 ### 微服务基础设施
-- **Nacos 2.5.1**（服务注册与发现、配置中心）
+- **Nacos 2.x**（服务注册与发现、配置中心）
 - **Spring Cloud Gateway**（API 网关）
-- **RocketMQ 2.2.3**（消息队列）
+- **RocketMQ 2.x**（消息队列）
 - **OpenFeign**（服务间通信）
-- **Seata 1.7.1**（分布式事务）
+- **Seata 1.x**（分布式事务）
 
 ### 数据持久化
-- **MySQL 8.0.33**
-- **Redis 7.0**
-- **Redisson 3.25.2**（分布式锁）
+- **MySQL 8.x**
+- **Redis 7.x**
+- **Redisson 3.x**（分布式锁）
 
 ### 可观测性
 - **Micrometer**（应用指标采集）

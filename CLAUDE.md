@@ -11,25 +11,25 @@
 ### 技术架构栈
 
 #### 后端技术栈
-- **核心框架**: JDK 21 + Spring Boot 3.3.5 + Spring Cloud 2023.0.3
-- **微服务治理**: Spring Cloud Gateway + Nacos 2.5.1 服务注册发现 + 配置中心
-- **数据持久化**: MySQL 8.0.33 + MyBatis-Plus 3.5.5 + Druid 连接池
-- **缓存方案**: Redis 7.0 + Redisson 3.25.2 分布式锁
-- **消息队列**: RocketMQ 2.2.3
-- **分布式事务**: Seata 1.7.1
+- **核心框架**: JDK 21 + Spring Boot 3.2.x + Spring Cloud 2023.x + Spring Cloud Alibaba 2023.x
+- **微服务治理**: Spring Cloud Gateway + Nacos 2.x 服务注册发现 + 配置中心
+- **数据持久化**: MySQL 8.x + MyBatis-Plus 3.x + Druid 连接池
+- **缓存方案**: Redis 7.x + Redisson 3.x 分布式锁
+- **消息队列**: RocketMQ 2.x
+- **分布式事务**: Seata 1.x
 - **服务通信**: OpenFeign + 负载均衡
 - **监控运维**: Spring Boot Actuator + Micrometer + Prometheus + Grafana
 
 #### 前端技术栈
-- **核心框架**: Vue 3.4 + Composition API
-- **UI组件库**: Element Plus 2.4.0
-- **路由管理**: Vue Router 4.2.0
-- **状态管理**: Pinia 2.1.0
-- **构建工具**: Vite 5.0.0
-- **HTTP客户端**: Axios 1.6.0
+- **核心框架**: Vue 3.x + Composition API
+- **UI组件库**: Element Plus 2.x
+- **路由管理**: Vue Router 4.x
+- **状态管理**: Pinia 2.x
+- **构建工具**: Vite 5.x
+- **HTTP客户端**: Axios 1.x
 
 #### 开发工具链
-- **构建工具**: Maven 3.9.11
+- **构建工具**: Maven 3.x
 - **代码质量**: ESLint + Prettier
 - **容器化**: Docker + Docker Compose
 - **编排工具**: Kubernetes (规划中)

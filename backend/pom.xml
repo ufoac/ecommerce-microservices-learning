@@ -29,13 +29,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Spring Boot & Spring Cloud 版本 -->
-        <spring-boot.version>3.3.5</spring-boot.version>
+        <spring-boot.version>3.2.12</spring-boot.version>
         <spring-cloud.version>2023.0.3</spring-cloud.version>
-        <spring-cloud-alibaba.version>2022.0.0.0</spring-cloud-alibaba.version>
+        <spring-cloud-alibaba.version>2023.0.3.4</spring-cloud-alibaba.version>
 
         <!-- 数据库相关 -->
         <mysql.version>8.0.33</mysql.version>
-        <mybatis-plus.version>3.5.5</mybatis-plus.version>
+        <mybatis-plus.version>3.5.14</mybatis-plus.version>
         <druid.version>1.2.20</druid.version>
 
         <!-- 工具类 -->
@@ -45,8 +45,8 @@
 
         <!-- 其他中间件 -->
         <redisson.version>3.25.2</redisson.version>
-        <rocketmq.version>2.2.3</rocketmq.version>
         <seata.version>1.7.1</seata.version>
+        <rocketmq.version>2.2.3</rocketmq.version>
     </properties>
 
     <!-- 依赖版本管理 -->
@@ -117,7 +117,20 @@
                 <version>${fastjson2.version}</version>
             </dependency>
 
-            <!-- RocketMQ -->
+
+            <!-- 中间件依赖管理 -->
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.seata</groupId>
+                <artifactId>seata-spring-boot-starter</artifactId>
+                <version>${seata.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.apache.rocketmq</groupId>
                 <artifactId>rocketmq-spring-boot-starter</artifactId>
