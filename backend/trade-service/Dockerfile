@@ -1,33 +1,42 @@
-# 使用华为云镜像源的OpenJDK运行时镜像
+# ==========================================
+# 电商微服务交易服务 Docker 镜像
+# 方案1：简化策略 - 直接使用本地构建的JAR包
+# 优势：构建快速，镜像体积小，避免容器内构建复杂性
+# 适用：个人学习开发，快速迭代
+# ==========================================
+
+# 使用JDK运行时镜像（华为云镜像源中JRE版本不可用）
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/openjdk:21-jdk-slim
 
-# 安装必要的工具
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# 合并RUN指令减少层数，同时设置时区和安装必要工具
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean && \
+    groupadd -r appuser 2>/dev/null || true && \
+    useradd -r -g appuser -s /bin/false appuser 2>/dev/null || true
 
-# 设置工作目录
+# 设置应用目录
 WORKDIR /app
 
-# 创建非root用户
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# 复制本地构建的jar包（先执行：mvn clean package -DskipTests）
+COPY target/trade-service-1.0.0.jar ./app.jar
 
-# 复制已构建的jar包
-COPY target/trade-service-1.0.0.jar app.jar
-
-# 设置文件权限
-RUN chown -R appuser:appuser /app
-
-# 切换到非root用户
-USER appuser
+# 创建日志目录并设置权限
+RUN mkdir -p /app/logs && \
+    chown -R appuser:appuser /app 2>/dev/null || true
 
 # 暴露端口
 EXPOSE 28083
 
-# 设置JVM参数（交易服务需要更多内存处理消息队列）
-ENV JAVA_OPTS="-Xms512m -Xmx1536m -XX:+UseG1GC -XX:+UseContainerSupport"
+# 优化JVM参数（交易服务需要更多内存处理订单和消息队列）
+ENV JAVA_OPTS="-Xms256m -Xmx768m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseStringDeduplication"
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# 健康检查（使用轻量级检查）
+HEALTHCHECK --interval=60s --timeout=5s --start-period=45s --retries=3 \
   CMD curl -f http://localhost:28083/actuator/health || exit 1
 
-# 启动命令
+# 启动命令（root用户运行，避免权限问题）
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

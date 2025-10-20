@@ -44,7 +44,7 @@
         <fastjson2.version>2.0.59</fastjson2.version>
 
         <!-- 其他中间件 -->
-        <redisson.version>3.25.2</redisson.version>
+        <redisson.version>3.42.0</redisson.version>
         <seata.version>2.3.0</seata.version>
         <rocketmq.version>5.1.4</rocketmq.version>
     </properties>

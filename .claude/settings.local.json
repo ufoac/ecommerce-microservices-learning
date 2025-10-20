@@ -7,6 +7,7 @@
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
       "Bash(git add:*)",
+      "Bash(git commit:*)",
       "Bash(docker-compose:*)",
       "Bash(docker pull:*)",
       "Bash(chmod:*)",
@@ -22,7 +23,18 @@
       "Bash(timeout:*)",
       "Bash(jar:*)",
       "Bash(cat:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(dir:*)",
+      "Bash(del:*)",
+      "Bash(cmd /c init.bat -c)",
+      "Bash(cmd /c \"init.bat --help\")",
+      "Bash(cmd.exe /c \"cd /d D:\\test\\learn\\deploy\\scripts\\windows\\deploy && init.bat -c\")",
+      "Bash(powershell.exe:*)",
+      "Read(//d/**)",
+      "Bash(cmd:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(deployscriptswindowsdeployinit.bat -c)",
+      "Read(//d//**)"
     ],
     "deny": [],
     "ask": []

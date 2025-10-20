@@ -1,0 +1,44 @@
+# ==========================================
+# Trade Service Docker 构建忽略文件
+# ==========================================
+
+# Maven 构建目录
+target/
+!target/*.jar
+
+# IDE 相关文件
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# 配置文件 (敏感信息)
+application-*.properties
+application-*.yml
+!application.yml
+
+# 文档和说明
+README.md
+docs/
+
+# Git 相关
+.git/
+.gitignore
+
+# Docker 相关
+Dockerfile*
