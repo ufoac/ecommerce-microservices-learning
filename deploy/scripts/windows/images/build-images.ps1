@@ -1,318 +1,383 @@
-# ===================================
-# E-commerce Microservices Project - Build Images Script
-# Version: v2.0 (PowerShell Enhanced Version)
-# Process: Maven Build -> JAR Package -> Docker Image
-# ===================================
+# ==========================================
+# E-commerce Microservices - Build Images Script
+# Version: v2.3 (Simplified Force Build)
+# Process: Maven Clean -> Maven Build -> Docker Build
+# ==========================================
 
 param(
     [Parameter(Position=0)]
-    [ValidateSet("user-service", "product-service", "trade-service", "api-gateway")]
-    [string]$service = "all",
-    [switch]$force,
-    [switch]$build,
-    [switch]$Help,
+    [ValidateSet("all", "user", "product", "trade", "gateway")]
+    [string]$target = "all",
+
+    [Parameter(Position=1)]
+    [string]$tag = "",
+
     [switch]$h
 )
 
-# Display header
-Write-Host ""
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "   E-commerce Microservices - Build Images" -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host ""
+# ==========================================
+# 标准配置区域
+# ==========================================
 
-# Handle help parameter
-if ($Help -or $h) {
-    Write-Host "Usage: .\build-images.ps1 [service] [options]"
+# 项目基础配置
+$ProjectConfig = @{
+    Name = "ecommerce"
+    Version = "2.3"
+    Services = @("user-service", "product-service", "trade-service", "api-gateway")
+    JarVersion = "1.0.0"
+    ImagePrefix = "ecommerce"
+    ServiceAliases = @{
+        "user" = "user-service"
+        "product" = "product-service"
+        "trade" = "trade-service"
+        "gateway" = "api-gateway"
+    }
+}
+
+# 构建配置
+$BuildConfig = @{
+    MavenCommand = "mvn clean package -DskipTests"
+    DockerBuildCommand = "docker build"
+}
+
+# 输出颜色配置
+$Colors = @{
+    Header = "Cyan"
+    Success = "Green"
+    Warning = "Yellow"
+    Error = "Red"
+    Info = "White"
+    Gray = "Gray"
+}
+
+$Separator = "=========================================="
+
+# ==========================================
+# 公共函数
+# ==========================================
+
+function Show-ScriptHeader {
+    Write-Host $Separator
+    Write-Host "  E-commerce Microservices - Build Images"
+    Write-Host $Separator
     Write-Host ""
-    Write-Host "Services:"
-    Write-Host "  all                  Build all services (default)"
-    Write-Host "  user-service         Build User Service only"
-    Write-Host "  product-service      Build Product Service only"
-    Write-Host "  trade-service        Build Trade Service only"
-    Write-Host "  api-gateway          Build API Gateway only"
+}
+
+function Show-Help {
+    Write-Host "Build Docker images - Version v2.3 (Simplified)" -ForegroundColor $Colors.Header
     Write-Host ""
-    Write-Host "Options:"
-    Write-Host "  -force               Force full rebuild (Maven + Docker)"
-    Write-Host "  -build               Build images only (from existing JARs)"
-    Write-Host "  -help, -h            Show this help message"
+    Write-Host "Usage:" -ForegroundColor $Colors.Header
+    Write-Host "  .\build-images.ps1 [target] [tag] [options]"
     Write-Host ""
-    Write-Host "Flow Control:"
-    Write-Host "  Default:     Check JAR -> Build if missing -> Check Image -> Build if missing"
-    Write-Host "  -build:      Skip JAR check -> Force Image Build (from existing JARs)"
-    Write-Host "  -force:      Force Maven Build -> Force Image Build (full rebuild)"
+    Write-Host "Parameters:" -ForegroundColor $Colors.Header
+    Write-Host "  target         Build target (default: all)"
+    Write-Host "  tag            Image tag (default: latest)"
     Write-Host ""
-    Write-Host "Use Cases:"
-    Write-Host "  Default:     Daily development (smart build, save time)"
-    Write-Host "  -build:      Dockerfile changed, code unchanged"
-    Write-Host "  -force:      Code changed, need complete rebuild"
+    Write-Host "Options:" -ForegroundColor $Colors.Header
+    Write-Host "  -h             Show this help message"
     Write-Host ""
-    Write-Host "Examples:"
-    Write-Host "  .\build-images.ps1            # Smart build"
-    Write-Host "  .\build-images.ps1 user-service"
-    Write-Host "  .\build-images.ps1 -build      # Rebuild images only"
-    Write-Host "  .\build-images.ps1 -force      # Full rebuild"
+    Write-Host "Available Services:" -ForegroundColor $Colors.Header
+    Write-Host "  all            Build all services (default)"
+    Write-Host "  user           Build User Service"
+    Write-Host "  product        Build Product Service"
+    Write-Host "  trade          Build Trade Service"
+    Write-Host "  gateway        Build API Gateway"
+    Write-Host ""
+    Write-Host "Build Process:" -ForegroundColor $Colors.Header
+    Write-Host "  1. Maven Clean Package (force rebuild)"
+    Write-Host "  2. Docker Image Build"
+    Write-Host "  3. Image Tagging"
+    Write-Host ""
+    Write-Host "Examples:" -ForegroundColor $Colors.Header
+    Write-Host "  .\build-images.ps1                      # Build all services"
+    Write-Host "  .\build-images.ps1 user                 # Build User Service only"
+    Write-Host "  .\build-images.ps1 user v1.0             # Build with custom tag"
+    Write-Host "  .\build-images.ps1 product,trade        # Build multiple services"
+    Write-Host "  .\build-images.ps1 all production       # Build all with custom tag"
+    Write-Host ""
+    Write-Host "Prerequisites:" -ForegroundColor $Colors.Header
+    Write-Host "  1. Maven 3.6+ installed"
+    Write-Host "  2. Docker environment running"
+    Write-Host "  3. Sufficient disk space"
     Write-Host ""
     Read-Host "Press Enter to exit"
     exit 0
 }
 
-Write-Host "Target: $service"
-if ($build) { Write-Host "Options: Build images only (from existing JARs)" }
-if ($force) { Write-Host "Options: Force full rebuild (Maven + Docker)" }
-Write-Host ""
-
-# Set path variables
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$ProjectRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir)))
-$BackendDir = Join-Path $ProjectRoot "backend"
-
-# Function to check if command exists
 function Test-Command {
-    param($Command)
+    param($command)
     try {
-        Get-Command $Command -ErrorAction Stop | Out-Null
+        Get-Command $command -ErrorAction Stop | Out-Null
         return $true
-    }
-    catch {
+    } catch {
         return $false
     }
 }
 
-# Function to check if image exists
 function Test-DockerImage {
     param($imageName)
     try {
-        $imageInfo = docker images --format "{{.Repository}}:{{.Tag}}" $imageName 2>$null
-        return ($imageInfo -eq $imageName)
+        $imageExists = docker images --format "table {{.Repository}}:{{.Tag}}" | Where-Object { $_ -match "^${imageName}$" }
+        return ($imageExists -eq $imageName)
     }
     catch {
         return $false
     }
 }
 
-# Check required tools
-Write-Host "[Pre-check] Checking required tools..." -ForegroundColor White
+function Get-ProjectPaths {
+    # 使用当前工作目录和相对路径计算
+    $currentDir = Get-Location
 
-# Check Maven
-if (-not (Test-Command "mvn")) {
-    Write-Host "ERROR: Maven is not installed or not in PATH" -ForegroundColor Red
-    Write-Host "Please install Maven" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-Write-Host "SUCCESS: Maven is available" -ForegroundColor Green
+    # 我们在 deploy/scripts/windows/images/ 目录下
+    # 需要向上4级到达项目根目录
+    $projectRoot = (Get-Item $currentDir).Parent.Parent.Parent.Parent.FullName
+    $backendDir = Join-Path $projectRoot "backend"
 
-# Check Docker
-if (-not (Test-Command "docker")) {
-    Write-Host "ERROR: Docker is not installed or not started" -ForegroundColor Red
-    Write-Host "Please install and start Docker Desktop" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-Write-Host "SUCCESS: Docker is available" -ForegroundColor Green
-
-# Check Docker daemon
-try {
-    $dockerInfo = docker info 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "Docker daemon not running"
-    }
-    Write-Host "SUCCESS: Docker daemon is running" -ForegroundColor Green
-}
-catch {
-    Write-Host "ERROR: Docker daemon is not running" -ForegroundColor Red
-    Write-Host "Please start Docker Desktop" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-Write-Host ""
-
-# Switch to backend directory
-if (-not (Test-Path $BackendDir)) {
-    Write-Host "ERROR: Backend directory not found: $BackendDir" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-
-Set-Location $BackendDir
-Write-Host "Working directory: $(Get-Location)" -ForegroundColor Gray
-
-# Define services
-$AllServices = @("user-service", "product-service", "trade-service", "api-gateway")
-$ServicesToBuild = if ($service -eq "all") { $AllServices } else { @($service) }
-
-Write-Host "Services to build: $($ServicesToBuild -join ', ')" -ForegroundColor White
-Write-Host ""
-
-# Maven build phase
-Write-Host "==========================================" -ForegroundColor Yellow
-Write-Host "[Phase 1/3] Maven Build" -ForegroundColor Yellow
-Write-Host "==========================================" -ForegroundColor Yellow
-
-# Check if JAR files exist
-$missingJars = @()
-foreach ($svc in $ServicesToBuild) {
-    $jarPath = Join-Path $svc "target\$svc-1.0.0.jar"
-    if (-not (Test-Path $jarPath)) {
-        $missingJars += $svc
+    return @{
+        ProjectRoot = $projectRoot
+        BackendDir = $backendDir
     }
 }
 
-if ($missingJars.Count -gt 0 -or $force) {
-    if ($missingJars.Count -gt 0) {
-        Write-Host "Found $($missingJars.Count) missing JAR files:" -ForegroundColor Yellow
-        foreach ($svc in $missingJars) {
-            Write-Host "  - $svc-1.0.0.jar" -ForegroundColor Gray
+function Write-StepHeader {
+    param(
+        [int]$Step,
+        [int]$Total,
+        [string]$Title
+    )
+    Write-Host $Separator -ForegroundColor $Colors.Header
+    Write-Host "[Step $Step/$Total] $Title" -ForegroundColor $Colors.Header
+    Write-Host $Separator -ForegroundColor $Colors.Header
+}
+
+function Get-ServicesToBuild {
+    param([string]$TargetInput)
+
+    if ([string]::IsNullOrEmpty($TargetInput) -or $TargetInput -eq "all") {
+        return $ProjectConfig.Services
+    }
+
+    # 检查是否为别名
+    if ($ProjectConfig.ServiceAliases.ContainsKey($TargetInput)) {
+        $resolvedService = $ProjectConfig.ServiceAliases[$TargetInput]
+        if ($resolvedService -in $ProjectConfig.Services) {
+            return @($resolvedService)
         }
     }
 
-    if ($force) {
-        Write-Host "Force full rebuild requested (-force)" -ForegroundColor Yellow
+    # 检查是否为完整服务名
+    if ($TargetInput -in $ProjectConfig.Services) {
+        return @($TargetInput)
     }
 
-    Write-Host "Building with Maven..." -ForegroundColor White
-    Write-Host "Command: mvn clean package -DskipTests" -ForegroundColor Gray
+    Write-Host "ERROR: Invalid service '$TargetInput'" -ForegroundColor $Colors.Error
+    Write-Host "Available services: $($ProjectConfig.Services -join ', ')" -ForegroundColor $Colors.Info
+    return @()
+}
 
-    $mavenOutput = mvn clean package -DskipTests 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: Maven build failed" -ForegroundColor Red
-        Write-Host "Error details:" -ForegroundColor Red
-        $mavenOutput | Select-Object -Last 20 | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-        Read-Host "Press Enter to exit"
-        exit 1
-    }
-    Write-Host "SUCCESS: Maven build completed" -ForegroundColor Green
-} else {
-    if ($build) {
-        Write-Host "Build images only mode (-build), using existing JARs" -ForegroundColor Green
-    } else {
-        Write-Host "SUCCESS: All JAR files already exist" -ForegroundColor Green
+function Build-MavenProject {
+    param([string]$ServiceName, [string]$ProjectDir)
+
+    Write-Host "Building Maven project: $ServiceName" -ForegroundColor $Colors.Info
+    Write-Host "Command: $($BuildConfig.MavenCommand)" -ForegroundColor $Colors.Gray
+    Write-Host "Directory: $ProjectDir" -ForegroundColor $Colors.Gray
+    Write-Host ""
+
+    Push-Location $ProjectDir
+    try {
+        # 直接执行Maven命令，显示实时输出
+        & cmd /c "$($BuildConfig.MavenCommand) 2>&1"
+        $exitCode = $LASTEXITCODE
+
+        Write-Host ""
+        if ($exitCode -eq 0) {
+            Write-Host "SUCCESS: Maven build completed for $ServiceName" -ForegroundColor $Colors.Success
+            return $true
+        } else {
+            Write-Host "ERROR: Maven build failed for $ServiceName (exit code: $exitCode)" -ForegroundColor $Colors.Error
+            return $false
+        }
+    } catch {
+        Write-Host "ERROR: Maven build exception for $ServiceName`: $($_.Exception.Message)" -ForegroundColor $Colors.Error
+        return $false
+    } finally {
+        Pop-Location
     }
 }
 
+function Build-DockerImage {
+    param([string]$ServiceName, [string]$ServiceDir, [string]$ImageTag)
+
+    $imageName = "$($ProjectConfig.ImagePrefix)/$ServiceName`:$ImageTag"
+    Write-Host "Building Docker image: $imageName" -ForegroundColor $Colors.Info
+    Write-Host "Context: $ServiceDir" -ForegroundColor $Colors.Gray
+    Write-Host "Command: docker build -t $imageName $ServiceDir" -ForegroundColor $Colors.Gray
+    Write-Host ""
+
+    try {
+        # 使用Start-Process来显示实时输出
+        $process = Start-Process -FilePath "docker" -ArgumentList "build", "-t", $imageName, $ServiceDir -NoNewWindow -Wait -PassThru
+
+        $exitCode = $process.ExitCode
+
+        Write-Host ""
+        if ($exitCode -eq 0) {
+            Write-Host "SUCCESS: Docker image built: $imageName" -ForegroundColor $Colors.Success
+
+            # 显示镜像信息
+            $imageInfo = docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" $imageName 2>$null
+            if ($imageInfo) {
+                Write-Host "Image details:" -ForegroundColor $Colors.Info
+                Write-Host $imageInfo -ForegroundColor $Colors.Gray
+            }
+
+            return $true
+        } else {
+            Write-Host "ERROR: Docker build failed for $ServiceName (exit code: $exitCode)" -ForegroundColor $Colors.Error
+            return $false
+        }
+    } catch {
+        Write-Host "ERROR: Docker build exception for $ServiceName`: $($_.Exception.Message)" -ForegroundColor $Colors.Error
+        return $false
+    }
+}
+
+# ==========================================
+# 主要执行逻辑
+# ==========================================
+
+# 显示头部
+Show-ScriptHeader
+
+# 处理帮助参数
+if ($h.IsPresent) {
+    Show-Help
+}
+
+# 解析参数
+$TargetService = $target
+$ImageTag = if ([string]::IsNullOrEmpty($tag)) { "latest" } else { $tag }
+
+# 显示配置信息
+Write-Host "Build Configuration:" -ForegroundColor $Colors.Header
+Write-Host "  Target: $TargetService" -ForegroundColor $Colors.Info
+Write-Host "  Tag: $ImageTag" -ForegroundColor $Colors.Info
 Write-Host ""
 
-# JAR verification phase
-Write-Host "==========================================" -ForegroundColor Yellow
-Write-Host "[Phase 2/3] JAR File Verification" -ForegroundColor Yellow
-Write-Host "==========================================" -ForegroundColor Yellow
+# 获取项目路径
+$paths = Get-ProjectPaths
 
-$verifiedServices = @()
-foreach ($svc in $ServicesToBuild) {
-    $jarPath = Join-Path $svc "target\$svc-1.0.0.jar"
-    if (Test-Path $jarPath) {
-        $jarSize = (Get-Item $jarPath).Length / 1MB
-        Write-Host "OK: $svc-1.0.0.jar exists ($([math]::Round($jarSize, 2)) MB)" -ForegroundColor Green
-        $verifiedServices += $svc
-    } else {
-        Write-Host "FAIL: $svc-1.0.0.jar not found" -ForegroundColor Red
-    }
-}
+# 解析服务列表
+$ServicesToBuild = Get-ServicesToBuild -TargetInput $TargetService
 
-if ($verifiedServices.Count -eq 0) {
-    Write-Host "ERROR: No valid JAR files found. Run without -skipMaven first." -ForegroundColor Red
-    Read-Host "Press Enter to exit"
+if ($ServicesToBuild.Count -eq 0) {
+    Write-Host "ERROR: No valid services to build" -ForegroundColor $Colors.Error
     exit 1
 }
 
-Write-Host "Verified $($verifiedServices.Count) service(s)" -ForegroundColor Green
+Write-Host "Services to build: $($ServicesToBuild -join ', ')" -ForegroundColor $Colors.Info
 Write-Host ""
 
-# Docker build phase
-Write-Host "==========================================" -ForegroundColor Yellow
-Write-Host "[Phase 3/3] Docker Image Build" -ForegroundColor Yellow
-Write-Host "==========================================" -ForegroundColor Yellow
+# ==========================================
+# Step 1: 检查环境
+# ==========================================
 
-$buildSuccess = 0
-$buildFailed = 0
+Write-StepHeader -Step 1 -Total 2 -Title "Checking Build Environment"
 
-foreach ($svc in $verifiedServices) {
+# 检查Maven
+if (Test-Command "mvn") {
+    Write-Host "SUCCESS: Maven is available" -ForegroundColor $Colors.Success
+} else {
+    Write-Host "ERROR: Maven is not installed or not in PATH" -ForegroundColor $Colors.Error
+    exit 1
+}
+
+# 检查Docker
+if (Test-Command "docker") {
+    Write-Host "SUCCESS: Docker is available" -ForegroundColor $Colors.Success
+} else {
+    Write-Host "ERROR: Docker is not installed or not running" -ForegroundColor $Colors.Error
+    exit 1
+}
+
+# 检查项目目录
+if (Test-Path $paths.BackendDir) {
+    Write-Host "SUCCESS: Backend directory found: $($paths.BackendDir)" -ForegroundColor $Colors.Success
+} else {
+    Write-Host "ERROR: Backend directory not found: $($paths.BackendDir)" -ForegroundColor $Colors.Error
+    exit 1
+}
+
+Write-Host ""
+
+# ==========================================
+# Step 2: 构建服务和镜像
+# ==========================================
+
+Write-StepHeader -Step 2 -Total 2 -Title "Building Services and Images"
+
+$BuildSuccess = 0
+$BuildFailed = 0
+
+foreach ($service in $ServicesToBuild) {
     Write-Host ""
-    Write-Host "[Building $svc] ================================" -ForegroundColor Cyan
+    Write-Host "[Building $service] ================================" -ForegroundColor $Colors.Header
 
-    # Check if Dockerfile exists
-    $dockerfilePath = Join-Path $svc "Dockerfile"
-    if (-not (Test-Path $dockerfilePath)) {
-        Write-Host "ERROR: Dockerfile not found: $dockerfilePath" -ForegroundColor Red
-        $buildFailed++
+    $serviceDir = Join-Path $paths.BackendDir $service
+
+    # 检查服务目录
+    if (-not (Test-Path $serviceDir)) {
+        Write-Host "ERROR: Service directory not found: $serviceDir" -ForegroundColor $Colors.Error
+        $BuildFailed++
         continue
     }
 
-    # Check if image already exists (skip if building or forced)
-    $imageName = "ecommerce/$svc`:latest"
-    if ((Test-DockerImage $imageName) -and (-not $build) -and (-not $force)) {
-        Write-Host "INFO: Image $imageName already exists, skipping (use -build or -force to rebuild)" -ForegroundColor Yellow
-        $buildSuccess++
+    # Maven构建
+    $mavenSuccess = Build-MavenProject -ServiceName $service -ProjectDir $serviceDir
+    if (-not $mavenSuccess) {
+        $BuildFailed++
         continue
     }
 
-    if ($build -or $force) {
-        $reason = if ($build) { "Build images only mode (-build)" } else { "Force full rebuild (-force)" }
-        Write-Host "$reason, rebuilding image" -ForegroundColor Yellow
-    }
-
-    # Build Docker image
-    Write-Host "Building image: $imageName" -ForegroundColor White
-    Write-Host "Command: docker build -t $imageName ./" -ForegroundColor Gray
-
-    Set-Location $svc
-    $buildOutput = docker build -t $imageName . 2>&1
-    Set-Location $BackendDir
-
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "SUCCESS: $svc image built successfully" -ForegroundColor Green
-        $buildSuccess++
+    # Docker构建
+    $dockerSuccess = Build-DockerImage -ServiceName $service -ServiceDir $serviceDir -ImageTag $ImageTag
+    if ($dockerSuccess) {
+        $BuildSuccess++
     } else {
-        Write-Host "ERROR: $svc image build failed" -ForegroundColor Red
-        Write-Host "Error details:" -ForegroundColor Red
-        $buildOutput | Select-Object -Last 10 | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-        $buildFailed++
+        $BuildFailed++
     }
-}
 
-Write-Host ""
-
-# Display results
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "              Build Summary" -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "OK: Successfully built: $buildSuccess image(s)" -ForegroundColor Green
-if ($buildFailed -gt 0) {
-    Write-Host "FAIL: Failed to build: $buildFailed image(s)" -ForegroundColor Red
-}
-Write-Host ""
-
-# Show project images
-Write-Host "Project Docker images:" -ForegroundColor White
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$imageList = docker images --format "table {{.Repository}}`t{{.Tag}}`t{{.Size}}`t{{.CreatedAt}}" | Where-Object { $_ -match "ecommerce/" }
-if ($imageList) {
-    $imageList
-} else {
-    Write-Host "No ecommerce images found" -ForegroundColor Yellow
-}
-
-Write-Host ""
-
-# Next steps guidance
-Write-Host "==========================================" -ForegroundColor Cyan
-if ($buildFailed -eq 0) {
-    Write-Host "🎉 Build completed successfully!" -ForegroundColor Green
     Write-Host ""
-    Write-Host "Next steps you can take:" -ForegroundColor White
-    Write-Host "- .\export-images.ps1          - Export images to files"
-    Write-Host "- .\push-images.ps1            - Push to registry"
-    Write-Host "- ..\deploy\start-all.ps1     - Start all services"
-    Write-Host "- docker run -d ecommerce/user-service  - Test single service"
-} else {
-    Write-Host "⚠️  Some builds failed, please check errors above" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "Troubleshooting:" -ForegroundColor White
-    Write-Host "- Check Maven build logs for compilation errors"
-    Write-Host "- Verify Dockerfile exists in each service directory"
-    Write-Host "- Check Docker daemon is running"
 }
-Write-Host "==========================================" -ForegroundColor Green
 
-Read-Host "Press Enter to exit"
+# ==========================================
+# 构建结果汇总
+# ==========================================
+
+Write-Host $Separator -ForegroundColor $Colors.Header
+Write-Host "              Build Summary" -ForegroundColor $Colors.Header
+Write-Host $Separator -ForegroundColor $Colors.Header
+Write-Host "SUCCESS: $BuildSuccess services built" -ForegroundColor $Colors.Success
+if ($BuildFailed -gt 0) {
+    Write-Host "FAILED: $BuildFailed services failed" -ForegroundColor $Colors.Error
+}
+Write-Host ""
+
+if ($BuildFailed -eq 0) {
+    Write-Host "All services built successfully!" -ForegroundColor $Colors.Success
+    Write-Host ""
+    Write-Host "Built Images:" -ForegroundColor $Colors.Header
+    foreach ($service in $ServicesToBuild) {
+        $imageName = "$($ProjectConfig.ImagePrefix)/$service`:$ImageTag"
+        Write-Host "  - $imageName" -ForegroundColor $Colors.Info
+    }
+    Write-Host ""
+    Write-Host "Next steps:" -ForegroundColor $Colors.Header
+    Write-Host "1. Test images: docker run --rm $($ProjectConfig.ImagePrefix)/service-name:$ImageTag" -ForegroundColor $Colors.Info
+    Write-Host "2. Export images: .\export-images.ps1" -ForegroundColor $Colors.Info
+    Write-Host "3. Push images: .\push-images.ps1" -ForegroundColor $Colors.Info
+} else {
+    Write-Host "Some services failed to build, please check error messages" -ForegroundColor $Colors.Warning
+}
+Write-Host $Separator
