@@ -11,7 +11,7 @@ Write-Host "Time: $(Get-Date)" -ForegroundColor Gray
 
 # Test Docker
 try {
-    $dockerVersion = docker --version 2>$null
+    $dockerVersion = & docker --version 2>&1
     Write-Host "Docker: OK - $dockerVersion" -ForegroundColor Green
 } catch {
     Write-Host "Docker: FAILED" -ForegroundColor Red
