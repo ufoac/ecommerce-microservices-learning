@@ -6,6 +6,10 @@ if ($help) {
     exit 0
 }
 
+# 设置PowerShell输出编码，避免在Git Bash中产生nul文件
+$OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 Write-Host "=== Environment Test ===" -ForegroundColor Green
 Write-Host "Time: $(Get-Date)" -ForegroundColor Gray
 
@@ -19,7 +23,7 @@ try {
 
 # Test network
 try {
-    $network = docker network ls | findstr ecommerce-network
+    $network = docker network ls | Select-String "ecommerce-network"
     if ($network) {
         Write-Host "Docker Network: OK" -ForegroundColor Green
     } else {
@@ -31,7 +35,7 @@ try {
 
 # Test images
 try {
-    $images = docker images | findstr ecommerce
+    $images = docker images | Select-String "ecommerce"
     $imageCount = ($images | Measure-Object).Count
     Write-Host "Docker Images: $imageCount found" -ForegroundColor $(if ($imageCount -ge 4) { "Green" } else { "Yellow" })
 } catch {
@@ -39,3 +43,6 @@ try {
 }
 
 Write-Host "=== Test Complete ===" -ForegroundColor Green
+
+# 清理Git Bash产生的nul文件
+Remove-Item -Path "nul" -Force -ErrorAction SilentlyContinue

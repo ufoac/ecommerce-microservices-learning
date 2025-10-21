@@ -56,6 +56,30 @@ $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
 [System.IO.File]::WriteAllText('script.ps1', $content, $utf8WithBom)
 ```
 
+## ⚠️ Git Bash 与 PowerShell 兼容性问题
+
+**重要发现**: 在 Git Bash 中直接执行 PowerShell 脚本会产生 `nul` 文件
+
+**问题根源**: Git Bash 与 PowerShell 的输出重定向机制不兼容
+
+**推荐执行方式**:
+```bash
+# ❌ 错误方式 - 会产生 nul 文件
+powershell.exe -File script.ps1
+
+# ✅ 正确方式 - 使用专用包装脚本
+./run-ps.sh script.ps1
+
+# ✅ 或者在PowerShell窗口中执行
+powershell.exe -Command "& ./script.ps1"
+```
+
+**自动清理方案**:
+```bash
+# 添加到脚本末尾自动清理
+[ -f "nul" ] && rm -f nul
+```
+
 ## ⚠️ 重要注意事项
 
 1. **文件保存**: 确保编辑器支持UTF-8 BOM
