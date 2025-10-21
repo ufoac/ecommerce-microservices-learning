@@ -126,12 +126,39 @@ function Test-DockerImage {
 }
 
 function Get-ProjectPaths {
-    # 使用当前工作目录和相对路径计算
+    # 使用已知的工作目录来计算项目路径
     $currentDir = Get-Location
 
-    # 我们在 deploy/scripts/windows/images/ 目录下
-    # 需要向上4级到达项目根目录
-    $projectRoot = (Get-Item $currentDir).Parent.Parent.Parent.Parent.FullName
+    # 检查当前目录结构并找到项目根目录
+    $projectRoot = $null
+
+    # 尝试从不同可能的目录开始查找
+    $possibleRoots = @(
+        $currentDir,
+        (Join-Path $currentDir ".."),
+        (Join-Path $currentDir "..\.."),
+        (Join-Path $currentDir "..\..\.."),
+        (Join-Path $currentDir "..\..\..\..")
+    )
+
+    foreach ($root in $possibleRoots) {
+        $testRoot = [System.IO.Path]::GetFullPath($root)
+
+        # 检查是否有backend目录和项目特征文件
+        $backendTest = Join-Path $testRoot "backend"
+        $readmeTest = Join-Path $testRoot "README.md"
+
+        if ((Test-Path $backendTest) -and (Test-Path $readmeTest)) {
+            $projectRoot = $testRoot
+            break
+        }
+    }
+
+    if (-not $projectRoot) {
+        Write-Host "ERROR: Cannot find project root directory" -ForegroundColor Red
+        throw "Project root not found"
+    }
+
     $backendDir = Join-Path $projectRoot "backend"
 
     return @{
@@ -182,13 +209,64 @@ function Build-MavenProject {
     Write-Host "Building Maven project: $ServiceName" -ForegroundColor $Colors.Info
     Write-Host "Command: $($BuildConfig.MavenCommand)" -ForegroundColor $Colors.Gray
     Write-Host "Directory: $ProjectDir" -ForegroundColor $Colors.Gray
+
+    # 检查目录是否存在
+    if (-not (Test-Path $ProjectDir)) {
+        Write-Host "ERROR: Project directory does not exist: $ProjectDir" -ForegroundColor $Colors.Error
+        return $false
+    }
+
+    # 检查是否有pom.xml
+    $pomPath = Join-Path $ProjectDir "pom.xml"
+    if (-not (Test-Path $pomPath)) {
+        Write-Host "ERROR: pom.xml not found in: $ProjectDir" -ForegroundColor $Colors.Error
+        return $false
+    }
+
+    Write-Host "Found pom.xml: $pomPath" -ForegroundColor $Colors.Success
     Write-Host ""
 
+    # 先检查依赖是否已安装
+    Write-Host "Checking Maven dependencies..." -ForegroundColor White
     Push-Location $ProjectDir
     try {
-        # 直接执行Maven命令，显示实时输出
-        & cmd /c "$($BuildConfig.MavenCommand) 2>&1"
-        $exitCode = $LASTEXITCODE
+        $depCheck = & cmd /c "mvn dependency:resolve -q" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Dependencies not resolved, building parent project first..." -ForegroundColor Yellow
+            Write-Host ""
+
+            # 回到backend根目录构建整个项目
+            $backendDir = Split-Path -Parent $ProjectDir
+            Push-Location $backendDir
+            try {
+                Write-Host "Building entire backend project to resolve dependencies..." -ForegroundColor White
+                Write-Host "Command: mvn clean install -DskipTests" -ForegroundColor $Colors.Gray
+                Write-Host "Directory: $backendDir" -ForegroundColor $Colors.Gray
+                Write-Host ""
+
+                $parentProcess = Start-Process -FilePath "cmd" -ArgumentList "/c", "mvn clean install -DskipTests" -NoNewWindow -Wait -PassThru
+                $parentExitCode = $parentProcess.ExitCode
+
+                if ($parentExitCode -eq 0) {
+                    Write-Host "SUCCESS: Parent project build completed" -ForegroundColor $Colors.Success
+                } else {
+                    Write-Host "ERROR: Parent project build failed (exit code: $parentExitCode)" -ForegroundColor $Colors.Error
+                    return $false
+                }
+            } finally {
+                Pop-Location
+            }
+        }
+
+        # 现在构建具体的服务
+        Write-Host "Building service: $ServiceName..." -ForegroundColor White
+
+        # 使用Start-Process显示实时Maven输出，类似Docker构建
+        Write-Host "Maven build command: $($BuildConfig.MavenCommand)" -ForegroundColor Gray
+        Write-Host ""
+
+        $process = Start-Process -FilePath "cmd" -ArgumentList "/c", "$($BuildConfig.MavenCommand)" -NoNewWindow -Wait -PassThru
+        $exitCode = $process.ExitCode
 
         Write-Host ""
         if ($exitCode -eq 0) {
@@ -199,7 +277,7 @@ function Build-MavenProject {
             return $false
         }
     } catch {
-        Write-Host "ERROR: Maven build exception for $ServiceName`: $($_.Exception.Message)" -ForegroundColor $Colors.Error
+        Write-Host "ERROR: Maven build exception for $ServiceName`: $($_.Exception.Message)" -ForegroundColor Red
         return $false
     } finally {
         Pop-Location
@@ -238,7 +316,7 @@ function Build-DockerImage {
             return $false
         }
     } catch {
-        Write-Host "ERROR: Docker build exception for $ServiceName`: $($_.Exception.Message)" -ForegroundColor $Colors.Error
+        Write-Host "ERROR: Docker build exception for $ServiceName`: $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
 }

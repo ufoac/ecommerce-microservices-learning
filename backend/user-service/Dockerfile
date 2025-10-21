@@ -1,10 +1,13 @@
 # ==========================================
-# 电商微服务用户服务 Docker 镜像 - 极简极速版
-# 方案3：零网络依赖，构建速度最快
+# 电商微服务用户服务 Docker 镜像 - 标准版
+# 包含 curl 用于健康检查
 # ==========================================
 
 # 使用JDK运行时镜像
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/openjdk:21-jdk-slim
+
+# 安装 curl（用于健康检查）和基础工具
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # 设置应用目录
 WORKDIR /app
@@ -23,10 +26,6 @@ ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRA
 
 # 设置时区（如果需要的话，可以通过环境变量设置）
 ENV TZ="Asia/Shanghai"
-
-# 健康检查：使用Java内置的健康检查，无需curl
-HEALTHCHECK --interval=60s --timeout=10s --start-period=45s --retries=3 \
-  CMD java -jar app.jar --health-check || exit 1
 
 # 启动命令（设置时区并启动）
 ENTRYPOINT ["sh", "-c", "ln -snf /usr/share/zoneinfo/$TZ /etc/localtime 2>/dev/null || true && java $JAVA_OPTS -jar app.jar"]

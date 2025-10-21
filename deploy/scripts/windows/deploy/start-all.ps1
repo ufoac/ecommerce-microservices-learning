@@ -1,376 +1,728 @@
-# ===================================
-# E-commerce Microservices Project - Start All Services Script
-# Version: v2.0 (PowerShell Enhanced Version)
-# ===================================
+# ==========================================
+# E-commerce Microservices - Start Services Script
+# Version: v3.0 (Unified Architecture)
+# ==========================================
 
-param(
-    [Parameter(Position=0)]
-    [ValidateSet("all", "infra", "apps", "mysql", "redis", "nacos", "rocketmq", "api-gateway", "user-service", "product-service", "trade-service")]
-    [string]$target = "all",
-    [switch]$noWait,
-    [switch]$force,
-    [switch]$statusOnly,
-    [switch]$Help,
-    [switch]$h
-)
+# ==========================================
+# 标准配置区域 (手动修改配置)
+# ==========================================
 
-# Display header
-Write-Host ""
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "   E-commerce Microservices - Start Services" -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host ""
-
-# Handle help parameter
-if ($Help -or $h) {
-    Write-Host "Usage: .\start-all.ps1 [target] [options]"
-    Write-Host ""
-    Write-Host "Targets:"
-    Write-Host "  all                  Start all services (default)"
-    Write-Host "  infra                Start infrastructure services only"
-    Write-Host "  apps                 Start application services only"
-    Write-Host "  mysql                Start MySQL service only"
-    Write-Host "  redis                Start Redis service only"
-    Write-Host "  nacos                Start Nacos service only"
-    Write-Host "  rocketmq             Start RocketMQ services only"
-    Write-Host "  api-gateway          Start API Gateway only"
-    Write-Host "  user-service         Start User Service only"
-    Write-Host "  product-service      Start Product Service only"
-    Write-Host "  trade-service        Start Trade Service only"
-    Write-Host ""
-    Write-Host "Options:"
-    Write-Host "  -noWait              Skip health check waiting"
-    Write-Host "  -force               Force recreate containers"
-    Write-Host "  -statusOnly          Show status only, don't start"
-    Write-Host "  -help, -h            Show this help message"
-    Write-Host ""
-    Write-Host "Examples:"
-    Write-Host "  .\start-all.ps1            # Start all services"
-    Write-Host "  .\start-all.ps1 infra      # Start infrastructure only"
-    Write-Host "  .\start-all.ps1 mysql      # Start MySQL only"
-    Write-Host "  .\start-all.ps1 apps -force -noWait"
-    Write-Host ""
-    Read-Host "Press Enter to exit"
-    exit 0
+# 项目基础配置
+$ProjectConfig = @{
+    Name = "E-commerce Microservices"
+    Version = "1.0.0"
+    Network = @{
+        Name = "ecommerce-network"
+        Subnet = "172.20.0.0/16"
+        Gateway = "172.20.0.1"
+    }
+    ComposeFiles = @{
+        Infrastructure = "docker-compose.infra.yml"
+        Applications = "docker-compose.apps.yml"
+        ComposeDir = "..\..\..\docker-compose"
+    }
 }
 
-Write-Host "Target: $target"
-if ($noWait) { Write-Host "Options: Skip health check waiting" }
-if ($force) { Write-Host "Options: Force recreate containers" }
-if ($statusOnly) { Write-Host "Options: Show status only" }
-Write-Host ""
+# 服务配置
+$Services = @{
+    Infrastructure = @(
+        @{ Name = "mysql"; Port = 3306; DisplayName = "MySQL Database" },
+        @{ Name = "redis"; Port = 6379; DisplayName = "Redis Cache" },
+        @{ Name = "nacos"; Port = 18848; DisplayName = "Nacos Registry" },
+        @{ Name = "rocketmq"; Ports = @(9876, 10909, 10911); DisplayName = "RocketMQ" }
+    )
+    Applications = @(
+        @{ Name = "api-gateway"; Port = 28080; DisplayName = "API Gateway" },
+        @{ Name = "user-service"; Port = 28081; DisplayName = "User Service" },
+        @{ Name = "product-service"; Port = 28082; DisplayName = "Product Service" },
+        @{ Name = "trade-service"; Port = 28083; DisplayName = "Trade Service" }
+    )
+}
 
-# Function to check if command exists
-function Test-Command {
-    param($Command)
+# 环境要求配置
+$EnvironmentConfig = @{
+    MinMemoryGB = 4
+    MinDiskGB = 10
+    RequiredPorts = @(3306, 6379, 18848, 9876, 10909, 10911, 18080, 28080, 28081, 28082, 28083)
+}
+
+# 目录配置
+$DirectoryConfig = @{
+    DataRoot = "data"
+    ConfigRoot = "config"
+    LogsRoot = "logs"
+    SubDirs = @("mysql", "redis", "nacos", "rocketmq", "user-service", "product-service", "trade-service", "api-gateway")
+}
+
+# UI配置
+$UI = @{
+    Colors = @{
+        Header = "Cyan"
+        Success = "Green"
+        Warning = "Yellow"
+        Error = "Red"
+        Info = "White"
+        Gray = "Gray"
+    }
+    Separators = @{
+        Main = "=========================================="
+        Sub = "------------------------------------------"
+    }
+}
+
+# ==========================================
+# 脚本参数
+# ==========================================
+
+# 手动解析参数
+$Target = "all"
+$NoWait = $false
+$Force = $false
+$StatusOnly = $false
+$Help = $false
+
+foreach ($arg in $args) {
+    switch ($arg.ToLower()) {
+        "all" { $Target = "all" }
+        "infra" { $Target = "infra" }
+        "apps" { $Target = "apps" }
+        "mysql" { $Target = "mysql" }
+        "redis" { $Target = "redis" }
+        "nacos" { $Target = "nacos" }
+        "rocketmq" { $Target = "rocketmq" }
+        "api-gateway" { $Target = "api-gateway" }
+        "user-service" { $Target = "user-service" }
+        "product-service" { $Target = "product-service" }
+        "trade-service" { $Target = "trade-service" }
+        "-nowait" { $NoWait = $true }
+        "-force" { $Force = $true }
+        "-statusonly" { $StatusOnly = $true }
+        "-help" { $Help = $true }
+        "-h" { $Help = $true }
+        default {
+            if ($arg -notlike "-*") {
+                $Target = $arg
+            }
+        }
+    }
+}
+
+# ==========================================
+# 公共函数区域 (标准函数库)
+# ==========================================
+
+function Write-ScriptHeader {
+    param([string]$Title, [string]$Subtitle = "")
+
+    Write-Host ""
+    Write-Host $UI.Separators.Main -ForegroundColor $UI.Colors.Header
+    Write-Host "   $Title" -ForegroundColor $UI.Colors.Header
+    if ($Subtitle) {
+        Write-Host "   $Subtitle" -ForegroundColor $UI.Colors.Gray
+    }
+    Write-Host $UI.Separators.Main -ForegroundColor $UI.Colors.Header
+    Write-Host ""
+}
+
+function Write-StepHeader {
+    param([int]$Step, [int]$Total, [string]$Title)
+
+    Write-Host $UI.Separators.Main -ForegroundColor $UI.Colors.Warning
+    Write-Host "[Step $Step/$Total] $Title" -ForegroundColor $UI.Colors.Warning
+    Write-Host $UI.Separators.Main -ForegroundColor $UI.Colors.Warning
+}
+
+function Write-Success {
+    param([string]$Message)
+    Write-Host "SUCCESS: $Message" -ForegroundColor $UI.Colors.Success
+}
+
+function Write-Error {
+    param([string]$Message)
+    Write-Host "ERROR: $Message" -ForegroundColor $UI.Colors.Error
+}
+
+function Write-Warning {
+    param([string]$Message)
+    Write-Host "WARNING: $Message" -ForegroundColor $UI.Colors.Warning
+}
+
+function Write-Info {
+    param([string]$Message)
+    Write-Host "INFO: $Message" -ForegroundColor $UI.Colors.Info
+}
+
+function Write-Detail {
+    param([string]$Message)
+    Write-Host "  $Message" -ForegroundColor $UI.Colors.Gray
+}
+
+function Show-Help {
+    param(
+        [string]$ScriptName,
+        [string]$Description,
+        [array]$Targets,
+        [array]$Options,
+        [array]$Examples
+    )
+
+    Write-Host "Usage: .\$ScriptName [target] [options]" -ForegroundColor $UI.Colors.Info
+    Write-Host ""
+    Write-Host $Description -ForegroundColor $UI.Colors.Info
+    Write-Host ""
+
+    if ($Targets) {
+        Write-Host "Targets:" -ForegroundColor $UI.Colors.Info
+        foreach ($target in $Targets) {
+            Write-Host $target -ForegroundColor $UI.Colors.Gray
+        }
+        Write-Host ""
+    }
+
+    if ($Options) {
+        Write-Host "Options:" -ForegroundColor $UI.Colors.Info
+        foreach ($option in $Options) {
+            Write-Host $option -ForegroundColor $UI.Colors.Gray
+        }
+        Write-Host ""
+    }
+
+    if ($Examples) {
+        Write-Host "Examples:" -ForegroundColor $UI.Colors.Info
+        foreach ($example in $Examples) {
+            Write-Host $example -ForegroundColor $UI.Colors.Gray
+        }
+        Write-Host ""
+    }
+}
+
+function Test-DockerEnvironment {
+    # 检查Docker是否安装
+    $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+    if (-not $dockerCmd) {
+        Write-Error "Docker is not installed or not in PATH"
+        Write-Info "Please install Docker Desktop from: https://www.docker.com/products/docker-desktop"
+        return $false
+    }
+
+    # 检查Docker是否运行
     try {
-        Get-Command $Command -ErrorAction Stop | Out-Null
+        $dockerInfo = docker info 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Docker Desktop is not running"
+            Write-Info "Please start Docker Desktop"
+            return $false
+        }
+        Write-Success "Docker environment is ready"
         return $true
-    }
-    catch {
+    } catch {
+        Write-Error "Failed to check Docker status: $($_.Exception.Message)"
         return $false
     }
 }
 
-# Function to check service health
-function Test-ServiceHealth {
-    param($serviceName, $timeoutSeconds = 30)
+function Get-ServiceList {
+    param([string]$Category = "all")
 
-    $maxWait = $timeoutSeconds
-    $waitCount = 0
+    switch ($Category) {
+        "infra" {
+            return $Services.Infrastructure | ForEach-Object { $_.Name }
+        }
+        "apps" {
+            return $Services.Applications | ForEach-Object { $_.Name }
+        }
+        default {
+            $infraServices = $Services.Infrastructure | ForEach-Object { $_.Name }
+            $appServices = $Services.Applications | ForEach-Object { $_.Name }
+            return @($infraServices) + @($appServices)
+        }
+    }
+}
 
-    while ($waitCount -lt $maxWait) {
-        $healthyServices = docker ps --filter "name=$serviceName" --filter "status=running" --filter "health=healthy" --format "{{.Names}}" 2>$null
+function Get-ServiceInfo {
+    param([string]$ServiceName)
 
-        if ($healthyServices -like "*$serviceName*") {
-            return $true
+    $service = $Services.Infrastructure | Where-Object { $_.Name -eq $ServiceName }
+    if (-not $service) {
+        $service = $Services.Applications | Where-Object { $_.Name -eq $ServiceName }
+    }
+
+    return $service
+}
+
+function Get-ComposeFilePath {
+    param([string]$ComposeType)
+
+    # 获取脚本所在目录 - 使用PSScriptRoot变量更可靠
+    $scriptDir = $PSScriptRoot
+    if (-not $scriptDir) {
+        $scriptDir = Split-Path -Parent $PSCommandPath
+    }
+    Write-Detail "Script directory: $scriptDir"
+
+    # 计算compose文件路径
+    $composeDir = Join-Path $scriptDir $ProjectConfig.ComposeFiles.ComposeDir
+    Write-Detail "Compose directory: $composeDir"
+
+    # 转换为绝对路径
+    $composeDir = [System.IO.Path]::GetFullPath($composeDir)
+    Write-Detail "Resolved compose directory: $composeDir"
+
+    if ($ComposeType -eq "infra") {
+        $composeFile = Join-Path $composeDir $ProjectConfig.ComposeFiles.Infrastructure
+    } elseif ($ComposeType -eq "apps") {
+        $composeFile = Join-Path $composeDir $ProjectConfig.ComposeFiles.Applications
+    } else {
+        throw "Unknown compose type: $ComposeType"
+    }
+
+    Write-Detail "Compose file: $composeFile"
+    return $composeFile
+}
+
+function Invoke-DockerCompose {
+    param(
+        [string]$Action,
+        [string]$Service,
+        [string]$ComposeType,
+        [switch]$Force
+    )
+
+    try {
+        $composeFile = Get-ComposeFilePath -ComposeType $ComposeType
+
+        if (-not (Test-Path $composeFile)) {
+            Write-Error "Compose file not found: $composeFile"
+            return $false
         }
 
-        Start-Sleep -Seconds 2
-        $waitCount += 2
-        Write-Host "Waiting for $serviceName... ($waitCount/$maxWait seconds)" -ForegroundColor Yellow
+        # 获取compose目录
+        $composeDir = Split-Path $composeFile
+        $composeFileName = Split-Path $composeFile -Leaf
+
+        $cmd = @("docker", "compose", "-f", $composeFileName, $Action)
+        if ($Service) {
+            $cmd += $Service
+        }
+        if ($Force) {
+            $cmd += "--force-recreate"
+        }
+
+        Write-Info "Command: docker compose -f $composeFileName $Action $Service"
+        Write-Detail "Working directory: $composeDir"
+
+        # 切换到compose目录
+        Push-Location $composeDir
+        & cmd /c "$($cmd -join ' ')" 2>&1
+        $exitCode = $LASTEXITCODE
+        Pop-Location
+
+        return $exitCode -eq 0
+    } catch {
+        Write-Error "Command execution failed: $($_.Exception.Message)"
+        return $false
     }
-
-    return $false
 }
 
-# Function to get service group
-function Get-ServiceGroup {
-    param($service)
+function Show-ServiceStatus {
+    param([switch]$SkipHealthCheck)
 
-    $infraServices = @("mysql", "redis", "nacos", "rocketmq")
-    $appServices = @("api-gateway", "user-service", "product-service", "trade-service")
+    Write-Info "Checking Docker container status..."
 
-    if ($infraServices -contains $service) {
-        return "infra"
-    } elseif ($appServices -contains $service) {
-        return "apps"
-    }
-    return "unknown"
-}
+    try {
+        # 获取所有运行的容器，优化格式
+        $containers = docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>&1
 
-# Set path variables
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$ProjectRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir)))
-$ComposeDir = Join-Path $ProjectRoot "deploy\docker-compose"
+        if ($containers -and $containers.Trim()) {
+            # 改进显示格式，确保表格正确对齐
+            $containerLines = $containers -split "`n"
+            foreach ($line in $containerLines) {
+                if ($line.Trim()) {
+                    # 使用固定宽度格式化显示
+                    Write-Host $line -ForegroundColor $UI.Colors.Info
+                }
+            }
 
-# Check Docker environment
-Write-Host "[Pre-check] Docker environment status..." -ForegroundColor White
-if (-not (Test-Command "docker")) {
-    Write-Host "ERROR: Docker is not installed or not started" -ForegroundColor Red
-    Write-Host "Please install and start Docker Desktop first" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
+            # 统计容器数量
+            $dataLines = $containerLines | Where-Object { $_ -match "^\w" }
+            $containerCount = $dataLines.Count
 
-try {
-    $dockerInfo = docker info 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "Docker info failed"
-    }
-    Write-Host "SUCCESS: Docker environment is normal" -ForegroundColor Green
-}
-catch {
-    Write-Host "ERROR: Docker is not running" -ForegroundColor Red
-    Write-Host "Please start Docker Desktop" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
+            if ($containerCount -gt 0) {
+                Write-Host ""
+                Write-Success "Total running containers: $containerCount"
 
-# Check if network exists
-Write-Host "[Pre-check] Docker network status..." -ForegroundColor White
-$networkExists = docker network inspect ecommerce-network 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "WARNING: Docker network 'ecommerce-network' does not exist" -ForegroundColor Yellow
-    Write-Host "Suggest running init.ps1 first" -ForegroundColor Yellow
-    $choice = Read-Host "Create network now? (Y/N)"
-    if ($choice -eq "Y" -or $choice -eq "y") {
-        Write-Host "Creating network..." -ForegroundColor White
-        $networkResult = docker network create --driver bridge --subnet=172.20.0.0/16 --gateway=172.20.0.1 ecommerce-network 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "SUCCESS: Network created successfully" -ForegroundColor Green
+                # 显示系统资源配额
+                Write-Host ""
+                Write-Info "System Resource Quotas:"
+                Show-ResourceQuotas
+
+                # 健康状态统计 - 简化版本
+                if (-not $SkipHealthCheck) {
+                    Write-Host ""
+                    Write-Info "Health Status Summary:"
+
+                    try {
+                        $allStatuses = docker ps --format "{{.Status}}" 2>&1
+                        if ($allStatuses) {
+                            $healthyCount = 0
+                            $startingCount = 0
+                            $runningCount = 0
+
+                            foreach ($status in $allStatuses) {
+                                if ($status -match "healthy") {
+                                    $healthyCount++
+                                } elseif ($status -match "starting|unhealthy") {
+                                    $startingCount++
+                                } elseif ($status -match "Up") {
+                                    $runningCount++
+                                }
+                            }
+
+                            if ($healthyCount -gt 0) {
+                                Write-Success "  [OK] Healthy services: $healthyCount"
+                            }
+                            if ($startingCount -gt 0) {
+                                Write-Warning "  [..] Starting services: $startingCount"
+                            }
+                            if ($runningCount -gt 0) {
+                                Write-Info "  [>>] Running services: $runningCount"
+                            }
+                        } else {
+                            Write-Detail "  No status information available"
+                        }
+                    } catch {
+                        Write-Detail "  Health check failed: $($_.Exception.Message)"
+                    }
+                }
+            }
         } else {
-            Write-Host "ERROR: Network creation failed, cannot continue" -ForegroundColor Red
-            Write-Host "Error details: $networkResult" -ForegroundColor Red
-            Read-Host "Press Enter to exit"
-            exit 1
+            Write-Warning "No containers are currently running"
+
+            # 显示系统资源配额（即使没有容器）
+            Write-Host ""
+            Write-Info "System Resource Quotas:"
+            Show-ResourceQuotas
         }
+
+        # 显示资源使用情况
+        Write-Host ""
+        Write-Info "Current Resource Usage (CPU / Memory):"
+        try {
+            $stats = docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" 2>&1
+            if ($stats -and $stats.Trim()) {
+                $statLines = $stats -split "`n"
+                foreach ($line in $statLines) {
+                    if ($line.Trim()) {
+                        Write-Host $line -ForegroundColor $UI.Colors.Gray
+                    }
+                }
+            } else {
+                Write-Detail "  Resource usage data not available"
+            }
+        } catch {
+            Write-Detail "  Resource usage not available"
+        }
+
+    } catch {
+        Write-Error "Failed to get container status: $($_.Exception.Message)"
     }
-} else {
-    Write-Host "SUCCESS: Docker network is normal" -ForegroundColor Green
 }
-Write-Host ""
 
-# Switch to compose directory
-Set-Location $ComposeDir
+function Show-ResourceQuotas {
+    try {
+        # 直接检查系统资源信息
 
-# Function to start services
-function Start-Services {
-    param($composeFile, $serviceName, $servicesToStart)
+        # 磁盘空间检查
+        try {
+            $disk = Get-WmiObject -Class Win32_LogicalDisk -Filter "DeviceID='C:'"
+            $freeSpace = [math]::Round($disk.FreeSpace / 1GB, 2)
+            $totalSpace = [math]::Round($disk.Size / 1GB, 2)
+            $diskSpace = "$freeSpace GB / $totalSpace GB (Free/Total)"
+            Write-Detail "  Disk Space: $diskSpace"
+        } catch {
+            Write-Detail "  Disk Space: Unable to get disk info"
+        }
 
-    Write-Host "Starting $serviceName..." -ForegroundColor White
+        # 内存信息检查
+        try {
+            $computerSystem = Get-WmiObject -Class Win32_ComputerSystem
+            $totalMemoryKB = $computerSystem.TotalPhysicalMemory
+            $totalMemoryGB = [math]::Round($totalMemoryKB / 1GB, 2)
 
-    $composeCommand = "docker compose -f $composeFile up -d"
-    if ($force) {
-        $composeCommand += " --force-recreate"
+            $os = Get-WmiObject -Class Win32_OperatingSystem
+            $freeMemoryKB = $os.FreePhysicalMemory
+            $freeMemoryGB = [math]::Round($freeMemoryKB / 1MB, 2)
+
+            $memoryInfo = "$freeMemoryGB GB / $totalMemoryGB GB (Available/Total)"
+            Write-Detail "  Memory Info: $memoryInfo"
+        } catch {
+            Write-Detail "  Memory Info: Unable to get memory info"
+        }
+
+        # CPU信息检查
+        try {
+            $cpu = Get-WmiObject -Class Win32_Processor
+            $cpuCores = $cpu.NumberOfCores
+            $cpuName = $cpu.Name
+            Write-Detail "  CPU Info: $cpuCores cores - $cpuName"
+        } catch {
+            Write-Detail "  CPU Info: Unable to get CPU info"
+        }
+
+        # 网络模式
+        Write-Detail "  Network Mode: Bridge (ecommerce-network)"
+
+    } catch {
+        Write-Detail "  Memory Limit: Unable to get resource info"
+        Write-Detail "  CPU Limit: Unable to get resource info"
+        Write-Detail "  Disk Space: Unable to get resource info"
+        Write-Detail "  Network Mode: Bridge (ecommerce-network)"
     }
+}
 
-    if ($servicesToStart) {
-        $composeCommand += " " + ($servicesToStart -join " ")
-    }
+# ==========================================
+# 专用功能函数
+# ==========================================
 
-    Write-Host "Command: $composeCommand" -ForegroundColor Gray
-    Invoke-Expression $composeCommand
+function Start-SingleService {
+    param([string]$ServiceName)
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: $serviceName failed to start" -ForegroundColor Red
+    $serviceInfo = Get-ServiceInfo -ServiceName $ServiceName
+    if (-not $serviceInfo) {
+        Write-Error "Unknown service: $ServiceName"
         return $false
     }
 
-    Write-Host "SUCCESS: $serviceName start command executed" -ForegroundColor Green
+    Write-Info "Starting $($serviceInfo.DisplayName)..."
+
+    # 确定服务属于哪个compose文件
+    $composeType = "apps"
+    if ($serviceInfo -in $Services.Infrastructure) {
+        $composeType = "infra"
+    }
+
+    $composeFile = ""
+    if ($composeType -eq "infra") {
+        $composeFile = Join-Path $ProjectConfig.ComposeFiles.ComposeDir $ProjectConfig.ComposeFiles.Infrastructure
+    } else {
+        $composeFile = Join-Path $ProjectConfig.ComposeFiles.ComposeDir $ProjectConfig.ComposeFiles.Applications
+    }
+
+    if (-not (Test-Path $composeFile)) {
+        Write-Error "Compose file not found: $composeFile"
+        return $false
+    }
+
+    $success = Invoke-DockerCompose -Action "up -d" -Service $ServiceName -ComposeType $composeType -Force:$Force
+
+    if ($success) {
+        Write-Success "$($serviceInfo.DisplayName) started successfully"
+
+        if (-not $NoWait -and $serviceInfo.Port) {
+            Write-Info "Waiting for service to be ready..."
+            Start-Sleep -Seconds 10
+
+            # 简单的健康检查
+            try {
+                $testResult = Test-NetConnection -ComputerName localhost -Port $serviceInfo.Port -WarningAction SilentlyContinue
+                if ($testResult.TcpTestSucceeded) {
+                    Write-Success "$($serviceInfo.DisplayName) is ready on port $($serviceInfo.Port)"
+                } else {
+                    Write-Warning "$($serviceInfo.DisplayName) may still be starting up"
+                }
+            } catch {
+                Write-Warning "Could not verify service status"
+            }
+        }
+
+        return $true
+    } else {
+        Write-Error "Failed to start $($serviceInfo.DisplayName)"
+        return $false
+    }
+}
+
+function Start-ServicesByCategory {
+    param([string]$Category)
+
+    Write-Info "Starting $Category services..."
+    Write-Info "About to call Get-ComposeFilePath for type: $Category"
+
+    if ($Category -eq "infra") {
+        # 启动基础设施服务
+        Write-Info "Infrastructure compose type detected"
+        $success = Invoke-DockerCompose -Action "up -d" -ComposeType "infra" -Force:$Force
+
+        if ($success) {
+            Write-Success "Infrastructure services started successfully"
+            return $true
+        } else {
+            Write-Error "Failed to start infrastructure services"
+            return $false
+        }
+    }
+    elseif ($Category -eq "apps") {
+        # 启动应用服务
+        Write-Info "Applications compose type detected"
+        $success = Invoke-DockerCompose -Action "up -d" -ComposeType "apps" -Force:$Force
+
+        if ($success) {
+            Write-Success "Application services started successfully"
+            return $true
+        } else {
+            Write-Error "Failed to start application services"
+            return $false
+        }
+    } else {
+        Write-Error "Unknown category: $Category"
+        return $false
+    }
+}
+
+function Check-Prerequisites {
+    Write-StepHeader 1 2 "Prerequisites Check"
+
+    # 检查Docker环境
+    if (-not (Test-DockerEnvironment)) {
+        return $false
+    }
+
+    # 检查网络
+    Write-Info "Checking Docker network..."
+    try {
+        $networkExists = docker network inspect $ProjectConfig.Network.Name 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Docker network '$($ProjectConfig.Network.Name)' not found"
+            Write-Info "Please run '.\init.ps1' to create the network first"
+            return $false
+        } else {
+            Write-Success "Docker network '$($ProjectConfig.Network.Name)' is available"
+        }
+    } catch {
+        Write-Error "Failed to check Docker network: $($_.Exception.Message)"
+        return $false
+    }
+
     return $true
 }
 
-# Status only mode
-if ($statusOnly) {
-    Write-Host "==========================================" -ForegroundColor Cyan
-    Write-Host "            Current Service Status" -ForegroundColor Cyan
-    Write-Host "==========================================" -ForegroundColor Cyan
-    Write-Host ""
-    # Fix encoding issue with docker ps output
-    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-    $dockerOutput = docker ps --format "table {{.Names}}`t{{.Status}}`t{{.Ports}}" 2>$null
-    if ($dockerOutput) {
-        $dockerOutput | Where-Object { $_ -notmatch "CONTAINER" }
+# ==========================================
+# 主程序逻辑
+# ==========================================
+
+# 参数验证
+$validTargets = @("all", "infra", "apps") + (Get-ServiceList)
+if ($Target -notin $validTargets) {
+    Write-Error "Invalid target '$Target'. Valid targets: $($validTargets -join ', ')"
+    Write-Info "Use -Help to see available options"
+    Read-Host "Press Enter to exit"
+    exit 1
+}
+
+# 处理帮助参数 - 移到最前面
+if ($Help -or $h) {
+    $targetList = @(
+        "all              Start all services (default)",
+        "infra             Start infrastructure services only",
+        "apps              Start application services only"
+    )
+    foreach ($service in Get-ServiceList) {
+        $targetList += "                  Start $service service only"
     }
-    Write-Host ""
+
+    Show-Help -ScriptName "start-all.ps1" -Description "Start project services" -Targets $targetList -Options @(
+        "-NoWait           Skip health check waiting",
+        "-Force            Force recreate containers",
+        "-StatusOnly       Show status only, don't start",
+        "-Help, -h         Show this help message"
+    ) -Examples @(
+        ".\start-all.ps1              # Start all services",
+        ".\start-all.ps1 infra        # Start infrastructure only",
+        ".\start-all.ps1 mysql        # Start MySQL only",
+        ".\start-all.ps1 apps -Force  # Force start applications"
+    )
     Read-Host "Press Enter to exit"
     exit 0
 }
 
-# Determine what to start
-$startedInfra = $false
-$startedApps = $false
+# 显示脚本头部
+Write-ScriptHeader -Title "$($ProjectConfig.Name) - Start Services" -Subtitle "Version: v3.0"
 
-switch ($target) {
-    "all" {
-        # Start infrastructure
-        Write-Host "==========================================" -ForegroundColor Yellow
-        Write-Host "[Phase 1/2] Starting Infrastructure Services" -ForegroundColor Yellow
-        Write-Host "==========================================" -ForegroundColor Yellow
-        Write-Host "Starting: MySQL, Redis, Nacos, RocketMQ" -ForegroundColor White
-        Write-Host ""
+# 执行启动逻辑
+if ($StatusOnly) {
+    Show-ServiceStatus
+} else {
+    Write-Info "Starting services with target: $Target"
+    Write-Host ""
 
-        if (Start-Services "docker-compose.infra.yml" "Infrastructure Services") {
-            $startedInfra = $true
+    # 检查先决条件
+    if (-not (Check-Prerequisites)) {
+        Write-Error "Prerequisites check failed"
+        Read-Host "Press Enter to exit"
+        exit 1
+    }
 
-            if (-not $noWait) {
-                Write-Host "Waiting for infrastructure services health check..." -ForegroundColor White
+    $allSuccess = $true
 
-                $infraServices = @("mysql", "redis", "nacos", "rocketmq-nameserver", "rocketmq-broker")
-                $healthyCount = 0
-
-                foreach ($service in $infraServices) {
-                    Write-Host "Checking $service..." -ForegroundColor Gray
-                    if (Test-ServiceHealth $service 60) {
-                        $healthyCount++
-                        Write-Host "SUCCESS: $service is healthy" -ForegroundColor Green
-                    } else {
-                        Write-Host "WARNING: $service health check timeout" -ForegroundColor Yellow
-                    }
-                }
-
-                Write-Host "Infrastructure services ready: $healthyCount/$($infraServices.Count)" -ForegroundColor Cyan
-            }
+    switch ($Target) {
+        "all" {
+            $allSuccess = $allSuccess -and (Start-ServicesByCategory -Category "infra")
+            $allSuccess = $allSuccess -and (Start-ServicesByCategory -Category "apps")
         }
-        Write-Host ""
-
-        # Start applications
-        Write-Host "==========================================" -ForegroundColor Yellow
-        Write-Host "[Phase 2/2] Starting Application Services" -ForegroundColor Yellow
-        Write-Host "==========================================" -ForegroundColor Yellow
-        Write-Host "Starting: API Gateway, User Service, Product Service, Trade Service" -ForegroundColor White
-        Write-Host ""
-
-        if (Start-Services "docker-compose.apps.yml" "Application Services") {
-            $startedApps = $true
-
-            if (-not $noWait) {
-                Write-Host "Waiting for application services health check..." -ForegroundColor White
-
-                $appServices = @("api-gateway", "user-service", "product-service", "trade-service")
-                $healthyCount = 0
-
-                foreach ($service in $appServices) {
-                    Write-Host "Checking $service..." -ForegroundColor Gray
-                    if (Test-ServiceHealth $service 45) {
-                        $healthyCount++
-                        Write-Host "SUCCESS: $service is healthy" -ForegroundColor Green
-                    } else {
-                        Write-Host "WARNING: $service health check timeout" -ForegroundColor Yellow
-                    }
-                }
-
-                Write-Host "Application services ready: $healthyCount/$($appServices.Count)" -ForegroundColor Cyan
-            }
+        "infra" {
+            $allSuccess = Start-ServicesByCategory -Category "infra"
+        }
+        "apps" {
+            $allSuccess = Start-ServicesByCategory -Category "apps"
+        }
+        default {
+            # 单个服务
+            $allSuccess = Start-SingleService -ServiceName $Target
         }
     }
 
-    "infra" {
-        Write-Host "==========================================" -ForegroundColor Yellow
-        Write-Host "Starting Infrastructure Services Only" -ForegroundColor Yellow
-        Write-Host "==========================================" -ForegroundColor Yellow
+    # 显示完成信息
+    Write-Host ""
+    Write-ScriptHeader -Title "Start Complete!"
 
-        $startedInfra = Start-Services "docker-compose.infra.yml" "Infrastructure Services"
-
-        if ($startedInfra -and -not $NoWait) {
-            Write-Host "Waiting for infrastructure services health check..." -ForegroundColor White
-            $infraServices = @("mysql", "redis", "nacos", "rocketmq-nameserver", "rocketmq-broker")
-            foreach ($service in $infraServices) {
-                Test-ServiceHealth $service 60 | Out-Null
+    if ($allSuccess) {
+        Write-Success "All services started successfully"
+        Write-Info "Service URLs:"
+        foreach ($service in $Services.Applications) {
+            Write-Detail "$($service.DisplayName): http://localhost:$($service.Port)"
+        }
+        Write-Host ""
+        Write-Info "Infrastructure Services:"
+        foreach ($service in $Services.Infrastructure) {
+            if ($service.Port) {
+                Write-Detail "$($service.DisplayName): localhost:$($service.Port)"
+            } else {
+                Write-Detail "$($service.DisplayName): $($service.Ports -join ', ')"
             }
         }
-    }
 
-    "apps" {
-        Write-Host "==========================================" -ForegroundColor Yellow
-        Write-Host "Starting Application Services Only" -ForegroundColor Yellow
-        Write-Host "==========================================" -ForegroundColor Yellow
+        # 显示当前容器状态
+        Write-Host ""
+        Write-StepHeader 1 1 "Current Docker Container Status"
+        Show-ServiceStatus
 
-        $startedApps = Start-Services "docker-compose.apps.yml" "Application Services"
+        Write-Host ""
+        Write-Info "Health Check Tips:"
+        Write-Detail "- Services may take a few moments to fully initialize"
+        Write-Detail "- Use '.\start-all.ps1 -StatusOnly' to check status later"
+        Write-Detail "- Check individual service logs with: docker logs <container_name>"
 
-        if ($startedApps -and -not $NoWait) {
-            Write-Host "Waiting for application services health check..." -ForegroundColor White
-            $appServices = @("api-gateway", "user-service", "product-service", "trade-service")
-            foreach ($service in $appServices) {
-                Test-ServiceHealth $service 45 | Out-Null
-            }
-        }
-    }
+    } else {
+        Write-Warning "Some services may not have started properly"
+        Write-Info "Check the output above for details"
+        Write-Info "You can check service status with: .\start-all.ps1 -StatusOnly"
 
-    default {
-        # Single service
-        $group = Get-ServiceGroup $target
-        if ($group -eq "infra") {
-            $startedInfra = Start-Services "docker-compose.infra.yml" $target @($target)
-            if ($startedInfra -and -not $NoWait) {
-                Test-ServiceHealth $target 60 | Out-Null
-            }
-        } elseif ($group -eq "apps") {
-            $startedApps = Start-Services "docker-compose.apps.yml" $target @($target)
-            if ($startedApps -and -not $NoWait) {
-                Test-ServiceHealth $target 45 | Out-Null
-            }
-        } else {
-            Write-Host "ERROR: Unknown service '$target'" -ForegroundColor Red
-            Read-Host "Press Enter to exit"
-            exit 1
-        }
+        # 即使启动失败，也显示当前容器状态以便调试
+        Write-Host ""
+        Write-Info "Current Container Status (for debugging):"
+        Show-ServiceStatus
     }
 }
 
-# Display final status
 Write-Host ""
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "              Startup Complete!" -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
-
-Write-Host "Service Status Overview:" -ForegroundColor White
-Write-Host ""
-# Fix encoding issue with docker ps output
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$dockerOutput = docker ps --format "table {{.Names}}`t{{.Status}}`t{{.Ports}}" 2>$null
-if ($dockerOutput) {
-    $dockerOutput | Where-Object { $_ -notmatch "CONTAINER" }
-}
-
-Write-Host ""
-Write-Host "Access URLs:" -ForegroundColor White
-Write-Host ""
-Write-Host "Infrastructure Services:" -ForegroundColor Gray
-Write-Host "- MySQL Database:     localhost:3306"
-Write-Host "- Redis Cache:        localhost:6379"
-Write-Host "- Nacos Console:      http://localhost:18848/nacos (nacos/nacos)"
-Write-Host "- RocketMQ Console:   http://localhost:18080"
-Write-Host ""
-Write-Host "Application Services:" -ForegroundColor Gray
-Write-Host "- API Gateway:        http://localhost:28080"
-Write-Host "- User Service:       http://localhost:28081"
-Write-Host "- Product Service:    http://localhost:28082"
-Write-Host "- Trade Service:      http://localhost:28083"
-Write-Host ""
-Write-Host "Health Check Endpoints:" -ForegroundColor Gray
-Write-Host "- API Gateway:        http://localhost:28080/actuator/health"
-Write-Host "- User Service:       http://localhost:28081/actuator/health"
-Write-Host "- Product Service:    http://localhost:28082/actuator/health"
-Write-Host "- Trade Service:      http://localhost:28083/actuator/health"
-Write-Host ""
-
-Write-Host "Common Operations:" -ForegroundColor White
-Write-Host "- .\start-all.ps1 --status-only  - View detailed service status"
-Write-Host "- .\stop-all.ps1              - Stop all services"
-Write-Host "- .\start-all.ps1 mysql       - Start single service"
-Write-Host "- .\start-all.ps1 apps --force - Force restart application services"
-Write-Host "==========================================" -ForegroundColor Green
-
 Read-Host "Press Enter to exit"
