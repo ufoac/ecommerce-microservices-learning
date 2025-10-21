@@ -27,14 +27,11 @@
       "Bash(dir:*)",
       "Bash(del:*)",
       "Bash(cmd /c init.bat -c)",
-      "Bash(cmd /c \"init.bat --help\")",
-      "Bash(cmd.exe /c \"cd /d D:\\test\\learn\\deploy\\scripts\\windows\\deploy && init.bat -c\")",
       "Bash(powershell.exe:*)",
       "Read(//d/**)",
       "Bash(cmd:*)",
       "Bash(cmd.exe:*)",
-      "Bash(deployscriptswindowsdeployinit.bat -c)",
-      "Read(//d//**)"
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

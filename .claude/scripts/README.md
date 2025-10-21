@@ -63,11 +63,30 @@ $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
 3. **版本兼容**: PowerShell 5.1需要特殊处理，PowerShell 7+原生支持UTF-8
 4. **团队协作**: 统一编码标准，避免不同环境问题
 
+## 🔗 认证信息参考
+
+### 服务连接凭据
+详细认证信息请参考：[`test-mode.md`](../test-mode.md#服务认证信息)
+
+**快速连接命令**：
+```powershell
+# MySQL (root用户)
+docker exec mysql mysql -u root -proot123456 -e "SELECT 'MySQL OK' as status;"
+
+# Redis
+docker exec redis redis-cli -a redis123456 ping
+
+# Nacos Web登录
+# 用户名: nacos, 密码: nacos
+# 地址: http://localhost:18848/nacos
+```
+
 ## 📚 参考资料
 
 - [CLAUDE.md重要运维经验教训](../../CLAUDE.md)
 - [故障排查手册](../../deploy/docs/TROUBLESHOOTING.md)
-- [测试分身配置](../test-persona.md)
+- [测试模式配置](../test-mode.md)
+- [环境变量配置](../../deploy/docker-compose/.env)
 
 ---
 

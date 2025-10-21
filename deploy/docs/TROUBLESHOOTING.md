@@ -373,6 +373,95 @@ docker cp [container]:/app/logs/app.log ./app.log
 docker logs -f [container-name]
 ```
 
+### Windows开发环境问题
+
+#### 问题9：Windows PowerShell脚本中文乱码
+**典型场景**：PowerShell脚本中包含中文字符时出现乱码或语法错误
+
+**错误症状**：
+```
+所在位置 行:1 字符: 34
++ Write-Host "中文测试" -ForegroundColor Green
++                                  ~
+字符串缺少终止符: "。
+```
+
+**根本原因**：
+- PowerShell 5.1默认使用GB2312编码解析脚本
+- UTF-8编码的中文在GB2312环境下显示为乱码
+- 字符串解析失败导致语法错误
+
+**✅ 终极解决方案**：
+```powershell
+# 1. 文件编码：UTF-8 with BOM
+# 2. 脚本开头添加：
+chcp 65001 | Out-Null
+
+# 3. 标准模板：
+# PowerShell中文脚本模板
+chcp 65001 | Out-Null
+
+Write-Host "中文脚本完美运行" -ForegroundColor Green
+```
+
+**实施步骤**：
+1. **创建脚本** → 编写包含中文的PowerShell脚本
+2. **添加BOM头** → 使用工具添加UTF-8 BOM头
+3. **首行命令** → 在脚本开头添加 `chcp 65001 | Out-Null`
+4. **正常执行** → `powershell.exe -File script.ps1`
+
+**预防措施**：
+- **优先选择**：英文脚本 > 中文脚本（避免编码问题）
+- **开发工具**：使用支持UTF-8 BOM的编辑器
+- **标准化**：所有PS1脚本遵循UTF-8 BOM + chcp标准
+- **替代方案**：考虑升级到PowerShell 7+（原生UTF-8支持）
+
+#### 问题10：bat脚本 vs PowerShell脚本选择
+**建议原则**：Windows环境优先PowerShell，避免bat脚本
+
+**PowerShell优势**：
+- 更好的错误处理和异常管理
+- 丰富的面向对象语法
+- .NET Framework集成
+- 更好的跨版本兼容性
+
+**bat脚本限制**：
+- 错误处理机制简单
+- 语法老旧，功能有限
+- 中文字符支持更差
+
+#### 问题11：数据库和缓存认证失败
+**典型场景**：连接MySQL或Redis时出现认证失败错误
+
+**错误症状**：
+```
+mysqladmin: connect to server at 'localhost' failed
+Access denied for user 'root'@'localhost' (using password: NO)
+Redis: NOAUTH Authentication required
+```
+
+**解决方案**：
+**认证凭据位置**：`deploy/docker-compose/.env`
+
+```bash
+# MySQL连接（使用正确密码）
+docker exec mysql mysql -u root -proot123456 -e "SELECT 'Connected' as status;"
+
+# Redis连接（使用正确密码）
+docker exec redis redis-cli -a redis123456 ping
+
+# 应用程序连接配置
+MySQL用户: ecommerce
+MySQL密码: ecommerce123
+Redis密码: redis123456
+```
+
+**预防措施**：
+- 所有认证信息统一存储在 `.env` 文件中
+- 不要在代码中硬编码密码
+- 定期检查和更新认证配置
+- 生产环境使用更安全的密码策略
+
 ## 📋 问题排查清单
 
 ### 环境问题检查清单
