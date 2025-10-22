@@ -41,13 +41,48 @@
 3. **执行验证**（参考[AI工作流程](docs/ai/workflow.md)）
 4. **确认功能正常**
 
-## 关键目录结构
-- **deploy/docker-compose/.env** - 环境变量配置
-- **deploy/docker-compose/docker-compose.infra.yml** - 基础设施编排
-- **deploy/docker-compose/docker-compose.apps.yml** - 应用服务编排
-- **deploy/scripts/windows/images/build-images.ps1** - 镜像构建脚本
-- **deploy/scripts/windows/deploy/start-all.ps1** - 服务启动脚本
-- **deploy/scripts/windows/deploy/stop-all.ps1** - 服务停止脚本
+## 项目目录结构
+
+### 核心目录
+- **backend/** - 后端微服务
+  - **common/** - 公共模块（DTO、常量、工具类，禁止Web依赖）
+  - **api-gateway/** - API网关服务 (28080)
+  - **user-service/** - 用户服务 (28081)
+  - **product-service/** - 商品服务 (28082)
+  - **trade-service/** - 交易服务 (28083)
+
+### 部署目录
+- **deploy/** - 部署相关
+  - **docker-compose/** - Docker编排文件
+    - **.env** - 环境变量配置
+    - **docker-compose.infra.yml** - 基础设施编排
+    - **docker-compose.apps.yml** - 应用服务编排
+  - **scripts/** - 部署脚本
+    - **windows/** - PowerShell脚本
+      - **images/build-images.ps1** - 镜像构建脚本
+      - **deploy/start-all.ps1** - 服务启动脚本
+      - **deploy/stop-all.ps1** - 服务停止脚本
+
+### 文档目录
+- **docs/** - 项目文档
+  - **ai/** - AI协作专用文档
+  - **开发计划.md**
+  - **需求.md**
+
+### 前端目录
+- **frontend/** - Vue.js前端应用
+
+### 关键文件路径
+- **各服务启动类**: `backend/{service}/src/main/java/com/cao/ecommerce/{service}/*Application.java`
+- **各服务配置**: `backend/{service}/src/main/resources/application.yml`
+- **父级POM**: `backend/pom.xml`
+- **Common模块**: `backend/common/src/main/java/com/cao/ecommerce/common/`
+
+### 基础设施
+- **infrastructure/** - 基础设施配置
+  - **database/** - 数据库相关
+  - **nginx/** - Nginx配置
+  - **monitoring/** - 监控配置
 
 ## 常用脚本速查
 ```bash
@@ -72,7 +107,6 @@ docker-compose -f docker-compose.apps.yml up -d
 - **[AI工作流程](docs/ai/workflow.md)** - 详细的开发流程和操作规范
 
 ### 使用原则
-- **CLAUDE.md**: 项目上下文和关键约束
 - **docs/ai/**: 详细操作指南和故障排查
 - **遇到困难问题时**: 先查看troubleshooting.md
 
