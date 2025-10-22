@@ -25,17 +25,17 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- 服务注册发现和配置中心将在第一阶段统一添加 -->
-        <!--
+        <!-- Nacos服务注册发现 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
+
+        <!-- Spring Boot Actuator 健康检查 -->
         <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        -->
 
         <!-- 数据库和Redis相关依赖将在第三阶段统一添加 -->
         <!--

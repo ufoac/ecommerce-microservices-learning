@@ -13,12 +13,12 @@ services:
     container_name: api-gateway
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
-      - JAVA_OPTS=${GATEWAY_JAVA_OPTS:--Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseContainerSupport -Duser.timezone=${TIMEZONE:-Asia/Shanghai}}
-      - NACOS_SERVER_ADDR=nacos:${NACOS_SERVER_PORT:-8848}
-      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
-      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - JAVA_OPTS=${GATEWAY_JAVA_OPTS}
+      - ENV_NACOS_SERVER_ADDR=${ENV_NACOS_SERVER_ADDR}
+      - ENV_NACOS_USERNAME=${ENV_NACOS_USERNAME}
+      - ENV_NACOS_PASSWORD=${ENV_NACOS_PASSWORD}
     ports:
-      - "${GATEWAY_PORT:-28080}:28080"
+      - "${GATEWAY_HOST_PORT:-28080}:${GATEWAY_PORT:-28080}"
     networks:
       - ecommerce-network
     volumes:
@@ -44,20 +44,12 @@ services:
     container_name: user-service
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
-      - JAVA_OPTS=${USER_SERVICE_JAVA_OPTS:--Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseContainerSupport -Duser.timezone=${TIMEZONE:-Asia/Shanghai}}
-      - NACOS_SERVER_ADDR=nacos:${NACOS_SERVER_PORT:-8848}
-      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
-      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
-      - DB_HOST=mysql
-      - DB_PORT=${MYSQL_PORT:-3306}
-      - DB_NAME=${MYSQL_DATABASE:-ecommerce}
-      - DB_USERNAME=${MYSQL_USER:-root}
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123456}
-      - REDIS_HOST=redis
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123456}
+      - JAVA_OPTS=${USER_SERVICE_JAVA_OPTS}
+      - ENV_NACOS_SERVER_ADDR=${ENV_NACOS_SERVER_ADDR}
+      - ENV_NACOS_USERNAME=${ENV_NACOS_USERNAME}
+      - ENV_NACOS_PASSWORD=${ENV_NACOS_PASSWORD}
     ports:
-      - "${USER_SERVICE_PORT:-28081}:28081"
+      - "${USER_SERVICE_HOST_PORT:-28081}:${USER_SERVICE_PORT:-28081}"
     networks:
       - ecommerce-network
     volumes:
@@ -84,20 +76,12 @@ services:
     container_name: product-service
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
-      - JAVA_OPTS=${PRODUCT_SERVICE_JAVA_OPTS:--Xms512m -Xmx1536m -XX:+UseG1GC -XX:+UseContainerSupport -Duser.timezone=${TIMEZONE:-Asia/Shanghai}}
-      - NACOS_SERVER_ADDR=nacos:${NACOS_SERVER_PORT:-8848}
-      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
-      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
-      - DB_HOST=mysql
-      - DB_PORT=${MYSQL_PORT:-3306}
-      - DB_NAME=${MYSQL_DATABASE:-ecommerce}
-      - DB_USERNAME=${MYSQL_USER:-root}
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123456}
-      - REDIS_HOST=redis
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123456}
+      - JAVA_OPTS=${PRODUCT_SERVICE_JAVA_OPTS}
+      - ENV_NACOS_SERVER_ADDR=${ENV_NACOS_SERVER_ADDR}
+      - ENV_NACOS_USERNAME=${ENV_NACOS_USERNAME}
+      - ENV_NACOS_PASSWORD=${ENV_NACOS_PASSWORD}
     ports:
-      - "${PRODUCT_SERVICE_PORT:-28082}:28082"
+      - "${PRODUCT_SERVICE_HOST_PORT:-28082}:${PRODUCT_SERVICE_PORT:-28082}"
     networks:
       - ecommerce-network
     volumes:
@@ -124,21 +108,12 @@ services:
     container_name: trade-service
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
-      - JAVA_OPTS=${TRADE_SERVICE_JAVA_OPTS:--Xms512m -Xmx1536m -XX:+UseG1GC -XX:+UseContainerSupport -Duser.timezone=${TIMEZONE:-Asia/Shanghai}}
-      - NACOS_SERVER_ADDR=nacos:${NACOS_SERVER_PORT:-8848}
-      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
-      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
-      - DB_HOST=mysql
-      - DB_PORT=${MYSQL_PORT:-3306}
-      - DB_NAME=${MYSQL_DATABASE:-ecommerce}
-      - DB_USERNAME=${MYSQL_USER:-root}
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123456}
-      - REDIS_HOST=redis
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123456}
-      - ROCKETMQ_NAMESERVER_ADDR=rocketmq-nameserver:${ROCKETMQ_NAMESRV_PORT:-9876}
+      - JAVA_OPTS=${TRADE_SERVICE_JAVA_OPTS}
+      - ENV_NACOS_SERVER_ADDR=${ENV_NACOS_SERVER_ADDR}
+      - ENV_NACOS_USERNAME=${ENV_NACOS_USERNAME}
+      - ENV_NACOS_PASSWORD=${ENV_NACOS_PASSWORD}
     ports:
-      - "${TRADE_SERVICE_PORT:-28083}:28083"
+      - "${TRADE_SERVICE_HOST_PORT:-28083}:${TRADE_SERVICE_PORT:-28083}"
     networks:
       - ecommerce-network
     volumes:

@@ -188,7 +188,6 @@ ecommerce-microservices-learning/
 
 如有问题或建议，欢迎通过以下方式联系：
 
-- Email: ikent84@163.com
 - Issues: [GitHub Issues](https://github.com/your-username/ecommerce-microservices-learning/issues)
 
 如果这个项目对你有帮助，请给它一个 Star！

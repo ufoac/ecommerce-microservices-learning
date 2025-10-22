@@ -5,22 +5,16 @@ spring:
   application:
     name: product-service  # 服务名称
 
-  # Nacos配置将在第一阶段统一添加
-  # cloud:
-  #   nacos:
-  #     discovery:
-  #       server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
-  #       namespace: public
-  #       group: DEFAULT_GROUP
-  #       username: ${NACOS_USERNAME:nacos}
-  #       password: ${NACOS_PASSWORD:nacos}
-  #     config:
-  #       server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
-  #       file-extension: yml
-  #       namespace: public
-  #       group: DEFAULT_GROUP
-  #       username: ${NACOS_USERNAME:nacos}
-  #       password: ${NACOS_PASSWORD:nacos}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${ENV_NACOS_SERVER_ADDR:localhost:18848}
+        namespace: ${APP_NACOS_NAMESPACE:public}
+        group: ${APP_NACOS_GROUP:DEFAULT_GROUP}
+        username: ${ENV_NACOS_USERNAME:nacos}
+        password: ${ENV_NACOS_PASSWORD:nacos}
+        enabled: true
+        register-enabled: true
 
   # 数据库和Redis配置将在第三阶段统一启用
   # datasource:

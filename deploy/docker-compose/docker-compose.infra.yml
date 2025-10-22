@@ -10,14 +10,14 @@ services:
     container_name: mysql
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123456}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-ecommerce}
-      - MYSQL_USER=${MYSQL_USER:-ecommerce}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-ecommerce123}
-      - MYSQL_CHARACTER_SET_SERVER=${MYSQL_CHARSET:-utf8mb4}
-      - MYSQL_COLLATION_SERVER=${MYSQL_COLLATION:-utf8mb4_unicode_ci}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_CHARACTER_SET_SERVER=${MYSQL_CHARSET}
+      - MYSQL_COLLATION_SERVER=${MYSQL_COLLATION}
     ports:
-      - "${MYSQL_PORT:-3306}:3306"
+      - "${MYSQL_HOST_PORT}:${MYSQL_PORT:-3306}"
     networks:
       - ecommerce-network
     volumes:
@@ -46,9 +46,9 @@ services:
     container_name: redis
     environment:
       - TZ=${TIMEZONE:-Asia/Shanghai}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123456}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_HOST_PORT:-6379}:${REDIS_PORT:-6379}"
     networks:
       - ecommerce-network
     volumes:
@@ -86,14 +86,14 @@ services:
       - SPRING_DATASOURCE_PLATFORM=mysql
       - MYSQL_SERVICE_HOST=mysql
       - MYSQL_SERVICE_PORT=${MYSQL_PORT:-3306}
-      - MYSQL_SERVICE_DB_NAME=${NACOS_DB_NAME:-nacos_config}
-      - MYSQL_SERVICE_USER=${NACOS_DB_USER:-root}
-      - MYSQL_SERVICE_PASSWORD=${NACOS_DB_PASSWORD:-root123456}
-      - MYSQL_CHARACTER_SET_SERVER=${MYSQL_CHARSET:-utf8mb4}
-      - MYSQL_COLLATION_SERVER=${MYSQL_COLLATION:-utf8mb4_unicode_ci}
+      - MYSQL_SERVICE_DB_NAME=${NACOS_DB_NAME}
+      - MYSQL_SERVICE_USER=${NACOS_DB_USER}
+      - MYSQL_SERVICE_PASSWORD=${NACOS_DB_PASSWORD}
+      - MYSQL_CHARACTER_SET_SERVER=${MYSQL_CHARSET}
+      - MYSQL_COLLATION_SERVER=${MYSQL_COLLATION}
     ports:
-      - "${NACOS_SERVER_PORT:-18848}:8848"
-      - "${NACOS_SERVER_RPC_PORT:-9848}:9848"
+      - "${NACOS_HOST_PORT}:${NACOS_PORT:-8848}"
+      - "${NACOS_HOST_RPC_PORT}:${NACOS_RPC_PORT:-9848}"
     depends_on:
       mysql:
         condition: service_healthy
@@ -121,7 +121,7 @@ services:
       - TZ=${TIMEZONE:-Asia/Shanghai}
       - JAVA_OPT_EXT=-server -Xms256m -Xmx256m
     ports:
-      - "${ROCKETMQ_NAMESRV_PORT:-9876}:9876"
+      - "${ROCKETMQ_NAMESRV_HOST_PORT}:${ROCKETMQ_NAMESRV_PORT:-9876}"
     networks:
       - ecommerce-network
     volumes:
@@ -147,8 +147,8 @@ services:
       - JAVA_OPT_EXT=-server -Xms256m -Xmx256m
       - NAMESRV_ADDR=rocketmq-nameserver:9876
     ports:
-      - "${ROCKETMQ_BROKER_PORT1:-10909}:10909"
-      - "${ROCKETMQ_BROKER_PORT2:-10911}:10911"
+      - "${ROCKETMQ_BROKER_HOST_PORT1:-10909}:${ROCKETMQ_BROKER_PORT1:-10909}"
+      - "${ROCKETMQ_BROKER_HOST_PORT2:-10911}:${ROCKETMQ_BROKER_PORT2:-10911}"
     depends_on:
       rocketmq-nameserver:
         condition: service_started
@@ -176,7 +176,7 @@ services:
       - TZ=${TIMEZONE:-Asia/Shanghai}
       - JAVA_OPTS=-Drocketmq.namesrv.addr=rocketmq-nameserver:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
     ports:
-      - "${ROCKETMQ_CONSOLE_PORT:-18080}:8080"
+      - "${ROCKETMQ_CONSOLE_HOST_PORT:-18080}:${ROCKETMQ_CONSOLE_PORT:-8080}"
     depends_on:
       rocketmq-nameserver:
         condition: service_started

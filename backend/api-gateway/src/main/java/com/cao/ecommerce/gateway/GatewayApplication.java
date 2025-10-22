@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
  * 电商微服务API网关启动类
@@ -28,7 +29,7 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
         DataSourceTransactionManagerAutoConfiguration.class,
         HibernateJpaAutoConfiguration.class
 })
-// @EnableDiscoveryClient 将在第一阶段统一添加
+@EnableDiscoveryClient
 public class GatewayApplication {
 
     public static void main(String[] args) {

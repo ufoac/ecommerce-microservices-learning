@@ -61,6 +61,34 @@
 4. 开始执行 → 按实际情况推进
 ```
 
+### Docker容器操作流程
+
+#### 应用代码修改流程
+```
+1. 代码修改 → 编辑应用代码或配置文件
+2. 本地验证 → mvn spring-boot:run 快速测试
+3. 构建镜像 → build-images.ps1 -Target [service]
+4. 容器验证 → docker-compose down/up 重建容器
+5. 功能测试 → 验证容器化环境功能
+```
+
+#### 配置问题修复流程
+```
+1. 定位配置 → 检查application.yml或.env文件
+2. 修改配置 → 更新相关配置参数
+3. 重建镜像 → 配置文件修改必须重建镜像
+4. 重建容器 → docker-compose down/up
+5. 验证配置 → 检查容器启动日志和功能
+```
+
+#### 脚本执行流程
+```
+1. 识别脚本类型 → .ps1使用PowerShell，.sh使用bash
+2. 确定工作目录 → 脚本通常在deploy/scripts/windows/下
+3. 执行命令 → powershell.exe -ExecutionPolicy Bypass -File
+4. 检查结果 → 验证脚本执行效果
+```
+
 ## 项目开发模式
 
 ### 核心理念

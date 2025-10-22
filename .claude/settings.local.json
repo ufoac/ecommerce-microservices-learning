@@ -31,7 +31,11 @@
       "Read(//d/**)",
       "Bash(cmd:*)",
       "Bash(cmd.exe:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "Bash(./build-images.ps1:*)",
+      "Bash(taskkill:*)",
+      "Bash(./start-all.ps1)"
     ],
     "deny": [],
     "ask": []

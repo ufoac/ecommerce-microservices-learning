@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
  * 电商微服务交易服务启动类
@@ -28,7 +29,7 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
     DataSourceTransactionManagerAutoConfiguration.class,
     HibernateJpaAutoConfiguration.class
 })
-// @EnableDiscoveryClient 和 @EnableFeignClients 将在后续阶段统一添加
+@EnableDiscoveryClient
 public class TradeApplication {
 
     public static void main(String[] args) {
